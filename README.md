@@ -9,7 +9,7 @@
 - 统一列表 + 详情页：一键跳转到站点/管理入口/Repo
 - 更好的体验：路由 Loading（Skeleton）、危险操作确认弹窗、导航高亮
 - 外部存储：WebDAV 或 阿里云 OSS（单文件 JSON）
-- 安全：可选 HTTP Basic Auth（强烈建议开启）
+- 安全：可选登录鉴权（强烈建议开启）
 - 导入/导出：便于迁移与备份
 
 ### 技术栈
@@ -60,9 +60,9 @@ pnpm dev
 - `WEBDAV_PASSWORD`（可选）
 - `WEBDAV_FILE_PATH`（可选，默认 `/deploy-manage/data.json`）
 
-#### Basic Auth（强烈建议）
+#### 登录鉴权（强烈建议）
 
-如果同时设置了下面两个环境变量，面板与 API 会启用 HTTP Basic Auth：
+如果同时设置了下面两个环境变量，面板与 API 会启用登录鉴权（未登录访问会跳转到 `/login`）：
 
 - `BASIC_AUTH_USER`
 - `BASIC_AUTH_PASSWORD`

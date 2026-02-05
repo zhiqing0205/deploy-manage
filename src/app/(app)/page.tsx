@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 
 import { listServers, listServices } from "@/lib/data";
-import { getEnv, hasBasicAuthEnabled } from "@/lib/env";
+import { getEnv, hasAuthEnabled } from "@/lib/env";
 import { Badge, ButtonLink, Card, SectionTitle, SubtleLink } from "@/components/ui";
 
 export default async function DashboardPage() {
@@ -19,7 +19,7 @@ export default async function DashboardPage() {
 
   const activeServices = services.filter((s) => s.status === "active");
   const env = getEnv();
-  const authEnabled = hasBasicAuthEnabled();
+  const authEnabled = hasAuthEnabled();
 
   return (
     <div className="space-y-8">

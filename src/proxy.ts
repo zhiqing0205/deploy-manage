@@ -1,13 +1,10 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-function unauthorized() {
-  return new NextResponse("Authentication required.", {
-    status: 401,
-    headers: {
-      "WWW-Authenticate": 'Basic realm="DeployManage", charset="UTF-8"',
-    },
-  });
+import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
+
+function apiUnauthorized() {
+  return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
 }
 
 export default function proxy(req: NextRequest) {
@@ -18,23 +15,21 @@ export default function proxy(req: NextRequest) {
   const pass = process.env.BASIC_AUTH_PASSWORD?.trim();
   if (!user || !pass) return NextResponse.next();
 
-  const auth = req.headers.get("authorization");
-  if (!auth) return unauthorized();
+  const pathname = req.nextUrl.pathname;
+  if (pathname === "/login") return NextResponse.next();
 
-  const [scheme, encoded] = auth.split(" ");
-  if (scheme !== "Basic" || !encoded) return unauthorized();
-
-  try {
-    const decoded = Buffer.from(encoded, "base64").toString("utf8");
-    const idx = decoded.indexOf(":");
-    const u = idx >= 0 ? decoded.slice(0, idx) : decoded;
-    const p = idx >= 0 ? decoded.slice(idx + 1) : "";
-    if (u === user && p === pass) return NextResponse.next();
-  } catch {
-    // ignore
+  const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
+  if (token) {
+    const session = verifySessionToken({ token, secret: pass });
+    if (session?.u === user) return NextResponse.next();
   }
 
-  return unauthorized();
+  if (pathname.startsWith("/api/")) return apiUnauthorized();
+
+  const loginUrl = req.nextUrl.clone();
+  loginUrl.pathname = "/login";
+  loginUrl.searchParams.set("next", `${pathname}${req.nextUrl.search}`);
+  return NextResponse.redirect(loginUrl);
 }
 
 export const config = {

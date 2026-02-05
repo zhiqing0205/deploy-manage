@@ -1,7 +1,7 @@
 import { ImportForm } from "@/components/forms/ImportForm";
 import { Download } from "lucide-react";
 import { Badge, ButtonLink, Card, Hr, SubtleLink } from "@/components/ui";
-import { getEnv, hasBasicAuthEnabled } from "@/lib/env";
+import { getEnv, hasAuthEnabled } from "@/lib/env";
 import { readDataFile } from "@/lib/data";
 
 type SearchParams = {
@@ -27,7 +27,7 @@ export default async function SettingsPage({
   const importOk = pickFirst(sp.import) === "ok";
 
   const env = getEnv();
-  const authEnabled = hasBasicAuthEnabled();
+  const authEnabled = hasAuthEnabled();
 
   let storeOk = true;
   let storeMessage = "OK";
@@ -141,7 +141,7 @@ export default async function SettingsPage({
               <span className="font-mono text-xs">BASIC_AUTH_PASSWORD</span> 来保护面板。
             </div>
             <div className="text-xs text-zinc-500">
-              开启后，浏览器会弹出 Basic Auth 登录框；API 也会一起受保护。
+              开启后，未登录访问会跳转到 `/login` 登录页；API 也会一起受保护。
             </div>
           </div>
         </Card>

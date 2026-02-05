@@ -139,23 +139,42 @@ export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
 
 export function Button({
   tone = "zinc",
+  variant = "solid",
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
   tone?: "zinc" | "blue" | "red";
+  variant?: "solid" | "outline" | "ghost";
 }) {
-  const toneClass =
+  const solidClass =
     tone === "blue"
       ? "bg-blue-600 text-white hover:bg-blue-700 focus-visible:ring-blue-500/30"
       : tone === "red"
         ? "bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500/30"
         : "bg-zinc-900 text-white hover:bg-zinc-800 focus-visible:ring-zinc-500/30 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white dark:focus-visible:ring-white/20";
 
+  const outlineClass =
+    tone === "blue"
+      ? "border border-blue-600/70 bg-white text-blue-700 hover:bg-blue-50 focus-visible:ring-blue-500/20 dark:border-blue-500/40 dark:bg-zinc-950 dark:text-blue-200 dark:hover:bg-blue-950/30"
+      : tone === "red"
+        ? "border border-red-600/70 bg-white text-red-700 hover:bg-red-50 focus-visible:ring-red-500/20 dark:border-red-500/40 dark:bg-zinc-950 dark:text-red-200 dark:hover:bg-red-950/30"
+        : "border border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-50 focus-visible:ring-zinc-500/20 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900 dark:focus-visible:ring-white/15";
+
+  const ghostClass =
+    tone === "blue"
+      ? "bg-transparent text-blue-600 hover:bg-blue-50 focus-visible:ring-blue-500/20 dark:text-blue-300 dark:hover:bg-blue-950/30"
+      : tone === "red"
+        ? "bg-transparent text-red-600 hover:bg-red-50 focus-visible:ring-red-500/20 dark:text-red-300 dark:hover:bg-red-950/30"
+        : "bg-transparent text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-zinc-500/20 dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-zinc-50 dark:focus-visible:ring-white/15";
+
+  const variantClass =
+    variant === "outline" ? outlineClass : variant === "ghost" ? ghostClass : solidClass;
+
   return (
     <button
       {...props}
       className={cn(
         "inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-60",
-        toneClass,
+        variantClass,
         props.className,
       )}
     />

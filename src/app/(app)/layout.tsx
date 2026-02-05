@@ -1,10 +1,14 @@
 import Link from "next/link";
 
+import { LogOut } from "lucide-react";
+
 import { AppNav } from "@/components/AppNav";
-import { hasBasicAuthEnabled } from "@/lib/env";
+import { Button } from "@/components/ui";
+import { logoutAction } from "@/app/actions/auth";
+import { hasAuthEnabled } from "@/lib/env";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const authEnabled = hasBasicAuthEnabled();
+  const authEnabled = hasAuthEnabled();
 
   return (
     <div className="min-h-dvh">
@@ -25,7 +29,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             )}
           </div>
 
-          <AppNav />
+          <div className="flex items-center gap-1">
+            <AppNav />
+            {authEnabled ? (
+              <form action={logoutAction} className="ml-1">
+                <Button type="submit" variant="ghost" className="h-9 px-3">
+                  <LogOut className="h-4 w-4" />
+                  <span className="hidden sm:inline">退出</span>
+                </Button>
+              </form>
+            ) : null}
+          </div>
         </div>
       </header>
 

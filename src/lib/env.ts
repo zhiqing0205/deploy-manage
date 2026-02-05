@@ -31,7 +31,7 @@ export function getEnv(): AppEnv {
   return EnvSchema.parse(process.env);
 }
 
-export function hasBasicAuthEnabled(): boolean {
+export function hasAuthEnabled(): boolean {
   const user = process.env.BASIC_AUTH_USER?.trim();
   const pass = process.env.BASIC_AUTH_PASSWORD?.trim();
   return Boolean(user && pass);
