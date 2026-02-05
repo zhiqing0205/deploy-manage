@@ -4,7 +4,7 @@ import { useActionState } from "react";
 
 import type { ActionState } from "@/lib/action-state";
 import { initialActionState } from "@/lib/action-state";
-import { Button, ButtonLink, Field, Input, Select, Textarea } from "@/components/ui";
+import { Button, ButtonLink, Field, Input, Select, Spinner, Textarea } from "@/components/ui";
 
 export type ServiceFormValues = {
   name?: string;
@@ -196,7 +196,14 @@ export function ServiceForm({
 
       <div className="flex flex-wrap gap-3">
         <Button type="submit" tone="blue" disabled={pending}>
-          {pending ? "保存中…" : submitLabel}
+          {pending ? (
+            <>
+              <Spinner className="h-4 w-4" />
+              保存中…
+            </>
+          ) : (
+            submitLabel
+          )}
         </Button>
         <ButtonLink href={cancelHref}>取消</ButtonLink>
       </div>
@@ -212,4 +219,3 @@ function CardLike({ title, children }: { title: string; children: React.ReactNod
     </div>
   );
 }
-

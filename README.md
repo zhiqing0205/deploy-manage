@@ -7,9 +7,17 @@
 - 服务器：记录 Host/IP、地区、供应商、1Panel 地址、标签、备注
 - 应用：记录访问域名、管理入口、部署方式（Docker/Vercel/反代等）、Repo、健康检查、反代信息、标签、备注
 - 统一列表 + 详情页：一键跳转到站点/管理入口/Repo
+- 更好的体验：路由 Loading（Skeleton）、危险操作确认弹窗、导航高亮
 - 外部存储：WebDAV 或 阿里云 OSS（单文件 JSON）
 - 安全：可选 HTTP Basic Auth（强烈建议开启）
 - 导入/导出：便于迁移与备份
+
+### 技术栈
+
+- Next.js App Router + Server Actions
+- Tailwind CSS
+- Radix UI（Dialog / Tooltip 等交互组件）
+- Lucide Icons（图标库）
 
 ## Getting Started
 

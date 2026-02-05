@@ -4,7 +4,7 @@ import { useActionState } from "react";
 
 import type { ActionState } from "@/lib/action-state";
 import { initialActionState } from "@/lib/action-state";
-import { Button, ButtonLink, Field, Input, Textarea } from "@/components/ui";
+import { Button, ButtonLink, Field, Input, Spinner, Textarea } from "@/components/ui";
 
 export type ServerFormValues = {
   name?: string;
@@ -74,11 +74,17 @@ export function ServerForm({
 
       <div className="flex flex-wrap gap-3">
         <Button type="submit" tone="blue" disabled={pending}>
-          {pending ? "保存中…" : submitLabel}
+          {pending ? (
+            <>
+              <Spinner className="h-4 w-4" />
+              保存中…
+            </>
+          ) : (
+            submitLabel
+          )}
         </Button>
         <ButtonLink href={cancelHref}>取消</ButtonLink>
       </div>
     </form>
   );
 }
-

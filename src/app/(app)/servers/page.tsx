@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Plus } from "lucide-react";
 
 import { listServers, listServices } from "@/lib/data";
 import { Badge, ButtonLink, Card, Input, SubtleLink } from "@/components/ui";
@@ -53,6 +54,7 @@ export default async function ServersPage({
           </p>
         </div>
         <ButtonLink href="/servers/new" tone="blue">
+          <Plus className="h-4 w-4" />
           新增服务器
         </ButtonLink>
       </div>
@@ -122,4 +124,3 @@ export default async function ServersPage({
     </div>
   );
 }
-

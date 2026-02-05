@@ -1,12 +1,15 @@
 import type { ReactNode } from "react";
 
-export function cn(...classes: Array<string | undefined | null | false>): string {
-  return classes.filter(Boolean).join(" ");
-}
+import { cn } from "@/lib/utils";
 
-export function Card({ children }: { children: ReactNode }) {
+export function Card({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+    <div
+      className={cn(
+        "group rounded-2xl border border-zinc-200/70 bg-white/70 p-5 shadow-sm backdrop-blur transition hover:shadow-md supports-[backdrop-filter]:bg-white/60 dark:border-zinc-800/70 dark:bg-zinc-950/40 dark:supports-[backdrop-filter]:bg-zinc-950/40",
+        className,
+      )}
+    >
       {children}
     </div>
   );
@@ -39,7 +42,12 @@ export function Badge({
             : "bg-zinc-500/10 text-zinc-700 dark:text-zinc-300";
 
   return (
-    <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", toneClass)}>
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
+        toneClass,
+      )}
+    >
       {children}
     </span>
   );
@@ -47,6 +55,26 @@ export function Badge({
 
 export function Hr() {
   return <hr className="my-4 border-zinc-200 dark:border-zinc-800" />;
+}
+
+export function Skeleton({ className }: { className?: string }) {
+  return (
+    <div
+      className={cn("animate-pulse rounded-xl bg-zinc-200/60 dark:bg-zinc-800/50", className)}
+    />
+  );
+}
+
+export function Spinner({ className }: { className?: string }) {
+  return (
+    <div
+      className={cn(
+        "h-5 w-5 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900 dark:border-zinc-700 dark:border-t-white",
+        className,
+      )}
+      aria-label="loading"
+    />
+  );
 }
 
 export function Field({
@@ -78,7 +106,7 @@ export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
     <input
       {...props}
       className={cn(
-        "h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm outline-none ring-0 placeholder:text-zinc-400 focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-950 dark:placeholder:text-zinc-600 dark:focus:border-zinc-500",
+        "h-10 w-full rounded-xl border border-zinc-300 bg-white px-3 text-sm outline-none ring-0 placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-2 focus:ring-zinc-900/5 dark:border-zinc-700 dark:bg-zinc-950 dark:placeholder:text-zinc-600 dark:focus:border-zinc-500 dark:focus:ring-white/10",
         props.className,
       )}
     />
@@ -90,7 +118,7 @@ export function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement
     <textarea
       {...props}
       className={cn(
-        "w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none placeholder:text-zinc-400 focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-950 dark:placeholder:text-zinc-600 dark:focus:border-zinc-500",
+        "w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm outline-none placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-2 focus:ring-zinc-900/5 dark:border-zinc-700 dark:bg-zinc-950 dark:placeholder:text-zinc-600 dark:focus:border-zinc-500 dark:focus:ring-white/10",
         props.className,
       )}
     />
@@ -102,7 +130,7 @@ export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
     <select
       {...props}
       className={cn(
-        "h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm outline-none focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-500",
+        "h-10 w-full rounded-xl border border-zinc-300 bg-white px-3 text-sm outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-900/5 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-zinc-500 dark:focus:ring-white/10",
         props.className,
       )}
     />
@@ -117,16 +145,16 @@ export function Button({
 }) {
   const toneClass =
     tone === "blue"
-      ? "bg-blue-600 text-white hover:bg-blue-700"
+      ? "bg-blue-600 text-white hover:bg-blue-700 focus-visible:ring-blue-500/30"
       : tone === "red"
-        ? "bg-red-600 text-white hover:bg-red-700"
-        : "bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white";
+        ? "bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500/30"
+        : "bg-zinc-900 text-white hover:bg-zinc-800 focus-visible:ring-zinc-500/30 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white dark:focus-visible:ring-white/20";
 
   return (
     <button
       {...props}
       className={cn(
-        "inline-flex h-10 items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60",
+        "inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-60",
         toneClass,
         props.className,
       )}
@@ -149,8 +177,8 @@ export function ButtonLink({
 }) {
   const toneClass =
     tone === "blue"
-      ? "bg-blue-600 text-white hover:bg-blue-700"
-      : "bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white";
+      ? "bg-blue-600 text-white hover:bg-blue-700 focus-visible:ring-blue-500/30"
+      : "bg-zinc-900 text-white hover:bg-zinc-800 focus-visible:ring-zinc-500/30 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white dark:focus-visible:ring-white/20";
 
   return (
     <a
@@ -158,7 +186,7 @@ export function ButtonLink({
       target={target}
       rel={rel}
       className={cn(
-        "inline-flex h-10 items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium transition-colors",
+        "inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2",
         toneClass,
       )}
     >

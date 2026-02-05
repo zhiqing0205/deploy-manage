@@ -1,14 +1,7 @@
 import Link from "next/link";
 
+import { AppNav } from "@/components/AppNav";
 import { hasBasicAuthEnabled } from "@/lib/env";
-import { cn } from "@/components/ui";
-
-const navItems = [
-  { href: "/", label: "概览" },
-  { href: "/services", label: "应用" },
-  { href: "/servers", label: "服务器" },
-  { href: "/settings", label: "设置" },
-];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const authEnabled = hasBasicAuthEnabled();
@@ -32,19 +25,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             )}
           </div>
 
-          <nav className="flex items-center gap-1">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "rounded-md px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-zinc-50",
-                )}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+          <AppNav />
         </div>
       </header>
 

@@ -1,4 +1,5 @@
 import { ImportForm } from "@/components/forms/ImportForm";
+import { Download } from "lucide-react";
 import { Badge, ButtonLink, Card, Hr, SubtleLink } from "@/components/ui";
 import { getEnv, hasBasicAuthEnabled } from "@/lib/env";
 import { readDataFile } from "@/lib/data";
@@ -111,6 +112,7 @@ export default async function SettingsPage({
 
           <div className="mt-4 flex flex-wrap gap-3">
             <ButtonLink href="/api/export" tone="blue">
+              <Download className="h-4 w-4" />
               导出 JSON
             </ButtonLink>
           </div>
@@ -161,4 +163,3 @@ export default async function SettingsPage({
     </div>
   );
 }
-

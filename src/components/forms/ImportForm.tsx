@@ -5,7 +5,7 @@ import { useActionState } from "react";
 import { importDataAction } from "@/app/actions/settings";
 import type { ActionState } from "@/lib/action-state";
 import { initialActionState } from "@/lib/action-state";
-import { Button, Field, Input } from "@/components/ui";
+import { Button, Field, Input, Spinner } from "@/components/ui";
 
 export function ImportForm() {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
@@ -26,9 +26,15 @@ export function ImportForm() {
       ) : null}
 
       <Button type="submit" tone="blue" disabled={pending}>
-        {pending ? "导入中…" : "导入并覆盖"}
+        {pending ? (
+          <>
+            <Spinner className="h-4 w-4" />
+            导入中…
+          </>
+        ) : (
+          "导入并覆盖"
+        )}
       </Button>
     </form>
   );
 }
-
