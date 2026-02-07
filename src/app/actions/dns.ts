@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import type { ActionState } from "@/lib/action-state";
@@ -46,7 +45,7 @@ export async function createDnsRecordAction(
   try {
     await createDnsRecord(zoneId, parsed.data);
     revalidatePath(`/domains/${zoneId}`);
-    redirect(`/domains/${zoneId}`);
+    return { ok: true };
   } catch (err: unknown) {
     return { error: err instanceof Error ? err.message : "创建失败。" };
   }
@@ -73,7 +72,7 @@ export async function updateDnsRecordAction(
   try {
     await updateDnsRecord(zoneId, recordId, parsed.data);
     revalidatePath(`/domains/${zoneId}`);
-    redirect(`/domains/${zoneId}`);
+    return { ok: true };
   } catch (err: unknown) {
     return { error: err instanceof Error ? err.message : "更新失败。" };
   }
@@ -82,5 +81,5 @@ export async function updateDnsRecordAction(
 export async function deleteDnsRecordAction(zoneId: string, recordId: string): Promise<void> {
   await cfDeleteDnsRecord(zoneId, recordId);
   revalidatePath(`/domains/${zoneId}`);
-  redirect(`/domains/${zoneId}`);
 }
+
