@@ -19,14 +19,40 @@ export async function writeDataFile(
   return store.write(DataFileSchema.parse(data), { etag });
 }
 
+function bySortOrder<T extends { sortOrder?: number; name: string }>(a: T, b: T): number {
+  const sa = a.sortOrder ?? Number.MAX_SAFE_INTEGER;
+  const sb = b.sortOrder ?? Number.MAX_SAFE_INTEGER;
+  return sa - sb || a.name.localeCompare(b.name);
+}
+
 export async function listServers(): Promise<Server[]> {
   const { data } = await readDataFile();
-  return [...data.servers].sort((a, b) => a.name.localeCompare(b.name));
+  return [...data.servers].sort(bySortOrder);
 }
 
 export async function listServices(): Promise<Service[]> {
   const { data } = await readDataFile();
-  return [...data.services].sort((a, b) => a.name.localeCompare(b.name));
+  return [...data.services].sort(bySortOrder);
+}
+
+export async function reorderServers(ids: string[]): Promise<void> {
+  const { data, etag } = await readDataFile();
+  const orderMap = new Map(ids.map((id, idx) => [id, idx]));
+  const servers = data.servers.map((s) => ({
+    ...s,
+    sortOrder: orderMap.get(s.id) ?? s.sortOrder,
+  }));
+  await writeDataFile({ ...data, servers }, etag);
+}
+
+export async function reorderServices(ids: string[]): Promise<void> {
+  const { data, etag } = await readDataFile();
+  const orderMap = new Map(ids.map((id, idx) => [id, idx]));
+  const services = data.services.map((s) => ({
+    ...s,
+    sortOrder: orderMap.get(s.id) ?? s.sortOrder,
+  }));
+  await writeDataFile({ ...data, services }, etag);
 }
 
 export async function getServerById(id: string): Promise<Server | undefined> {

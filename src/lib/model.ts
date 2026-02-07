@@ -35,6 +35,7 @@ export const ServerSchema = z
     currency: z.string().trim().min(1).optional(),
     expiredAt: z.string().datetime().optional(),
 
+    sortOrder: z.number().int().nonnegative().optional(),
     createdAt: z.string().datetime().catch(new Date(0).toISOString()),
     updatedAt: z.string().datetime().catch(new Date(0).toISOString()),
   })
@@ -101,6 +102,7 @@ export const ServiceSchema = z
         project: z.string().trim().optional(),
       })
       .optional(),
+    sortOrder: z.number().int().nonnegative().optional(),
     createdAt: z.string().datetime().catch(new Date(0).toISOString()),
     updatedAt: z.string().datetime().catch(new Date(0).toISOString()),
   })

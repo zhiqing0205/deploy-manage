@@ -7,7 +7,9 @@ import {
   importServersAction,
   type RemoteServer,
 } from "@/app/actions/sync";
+import { reorderServersAction } from "@/app/actions/reorder";
 import { ImportRemoteDialog, type ImportItem } from "@/components/forms/ImportRemoteDialog";
+import { SortableGrid } from "@/components/SortableGrid";
 import { Badge, ButtonLink, Card, Input, SubtleLink } from "@/components/ui";
 
 type SearchParams = {
@@ -109,11 +111,16 @@ export default async function ServersPage({
         </ButtonLink>
       </form>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <SortableGrid
+        onReorder={reorderServersAction}
+        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        disabled={Boolean(q)}
+      >
         {filtered.map((srv) => {
           const count = serviceCountByServer.get(srv.id) ?? 0;
           return (
-            <Card key={srv.id}>
+            <div key={srv.id} data-sort-id={srv.id}>
+            <Card>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <Link
@@ -147,19 +154,18 @@ export default async function ServersPage({
                 <SubtleLink href={`/servers/${srv.id}`}>详情 →</SubtleLink>
               </div>
             </Card>
+            </div>
           );
         })}
+      </SortableGrid>
 
-        {filtered.length === 0 ? (
-          <div className="sm:col-span-2 lg:col-span-3">
-            <Card>
-              <div className="text-sm text-zinc-600 dark:text-zinc-300">
-                没有匹配的服务器。
-              </div>
-            </Card>
+      {filtered.length === 0 ? (
+        <Card>
+          <div className="text-sm text-zinc-600 dark:text-zinc-300">
+            没有匹配的服务器。
           </div>
-        ) : null}
-      </div>
+        </Card>
+      ) : null}
     </div>
   );
 }

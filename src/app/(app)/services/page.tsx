@@ -7,7 +7,9 @@ import {
   importServicesAction,
   type RemoteService,
 } from "@/app/actions/sync";
+import { reorderServicesAction } from "@/app/actions/reorder";
 import { ImportRemoteDialog, type ImportItem } from "@/components/forms/ImportRemoteDialog";
+import { SortableGrid } from "@/components/SortableGrid";
 import { Badge, ButtonLink, Card, Input, Select, SubtleLink } from "@/components/ui";
 
 type SearchParams = {
@@ -73,6 +75,8 @@ export default async function ServicesPage({
   if (server) filtered = filtered.filter((s) => s.serverId === server);
   if (status) filtered = filtered.filter((s) => s.status === status);
 
+  const hasFilters = Boolean(q || server || status);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -121,13 +125,18 @@ export default async function ServicesPage({
         </div>
       </form>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <SortableGrid
+        onReorder={reorderServicesAction}
+        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        disabled={hasFilters}
+      >
         {filtered.map((svc) => {
           const serverName = svc.serverId ? serverNameById.get(svc.serverId) : undefined;
           const primaryUrl = svc.urls[0]?.url;
 
           return (
-            <Card key={svc.id}>
+            <div key={svc.id} data-sort-id={svc.id}>
+            <Card>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <Link
@@ -161,19 +170,18 @@ export default async function ServicesPage({
                 <SubtleLink href={`/services/${svc.id}`}>详情 →</SubtleLink>
               </div>
             </Card>
+            </div>
           );
         })}
+      </SortableGrid>
 
-        {filtered.length === 0 ? (
-          <div className="sm:col-span-2 lg:col-span-3">
-            <Card>
-              <div className="text-sm text-zinc-600 dark:text-zinc-300">
-                没有匹配的应用。
-              </div>
-            </Card>
+      {filtered.length === 0 ? (
+        <Card>
+          <div className="text-sm text-zinc-600 dark:text-zinc-300">
+            没有匹配的应用。
           </div>
-        ) : null}
-      </div>
+        </Card>
+      ) : null}
     </div>
   );
 }
