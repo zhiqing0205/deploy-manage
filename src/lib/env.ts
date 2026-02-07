@@ -23,6 +23,11 @@ const EnvSchema = z.object({
   OSS_ACCESS_KEY_SECRET: z.string().trim().min(1).optional(),
   OSS_BUCKET: z.string().trim().min(1).optional(),
   OSS_OBJECT_KEY: z.string().trim().min(1).catch("deploy-manage/data.json"),
+
+  // External services
+  PROBE_API_URL: z.string().trim().url().optional(),
+  STATUS_API_URL: z.string().trim().url().optional(),
+  CLOUDFLARE_API_TOKEN: z.string().trim().min(1).optional(),
 });
 
 export type AppEnv = z.infer<typeof EnvSchema>;

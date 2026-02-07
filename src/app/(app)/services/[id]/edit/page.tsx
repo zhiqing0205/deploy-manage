@@ -41,6 +41,7 @@ export default async function EditServicePage({
             status: service.status,
             deploymentType: service.deploymentType,
             repoUrl: service.repoUrl ?? "",
+            github: service.github ?? "",
             urlsText: urlListToText(service.urls),
             managementUrlsText: urlListToText(service.managementUrls),
             healthcheckUrl: service.healthcheckUrl ?? "",

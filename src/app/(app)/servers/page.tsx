@@ -2,6 +2,12 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 
 import { listServers, listServices } from "@/lib/data";
+import {
+  fetchRemoteServersAction,
+  importServersAction,
+  type RemoteServer,
+} from "@/app/actions/sync";
+import { ImportRemoteDialog, type ImportItem } from "@/components/forms/ImportRemoteDialog";
 import { Badge, ButtonLink, Card, Input, SubtleLink } from "@/components/ui";
 
 type SearchParams = {
@@ -11,6 +17,32 @@ type SearchParams = {
 function pickFirst(v: string | string[] | undefined): string | undefined {
   if (Array.isArray(v)) return v[0];
   return v;
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
+}
+
+async function fetchAction(): Promise<{ data: (RemoteServer & ImportItem)[] } | { error: string }> {
+  "use server";
+  const res = await fetchRemoteServersAction();
+  if ("error" in res) return res;
+  return {
+    data: res.data.map((s) => ({
+      ...s,
+      id: s.uuid,
+      detail: `${s.cpuName} · ${s.cpuCores} 核 · ${formatBytes(s.memTotal)} RAM · ${s.region}`,
+    })),
+  };
+}
+
+async function importAction(ids: (string | number)[]): Promise<{ count: number } | { error: string }> {
+  "use server";
+  return importServersAction(ids.map(String));
 }
 
 export default async function ServersPage({
@@ -53,10 +85,17 @@ export default async function ServersPage({
             记录服务器信息、1Panel 管理入口与关联应用。
           </p>
         </div>
-        <ButtonLink href="/servers/new" tone="blue">
-          <Plus className="h-4 w-4" />
-          新增服务器
-        </ButtonLink>
+        <div className="flex flex-wrap gap-2">
+          <ImportRemoteDialog
+            title="导入服务器（Probe）"
+            fetchAction={fetchAction}
+            importAction={importAction}
+          />
+          <ButtonLink href="/servers/new" tone="blue">
+            <Plus className="h-4 w-4" />
+            新增服务器
+          </ButtonLink>
+        </div>
       </div>
 
       <form className="flex gap-3" action="/servers" method="get">

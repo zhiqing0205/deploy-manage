@@ -148,6 +148,62 @@ export default async function SettingsPage({
       </div>
 
       <Card>
+        <div className="text-sm font-medium text-zinc-800 dark:text-zinc-200">外部服务集成</div>
+        <Hr />
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-zinc-600 dark:text-zinc-300">Probe (Komari)</span>
+              <Badge tone={env.PROBE_API_URL ? "green" : "zinc"}>
+                {env.PROBE_API_URL ? "已配置" : "未配置"}
+              </Badge>
+            </div>
+            {env.PROBE_API_URL ? (
+              <div className="mt-1 truncate font-mono text-xs text-zinc-500">
+                {env.PROBE_API_URL}
+              </div>
+            ) : (
+              <div className="mt-1 text-xs text-zinc-500">
+                设置 <span className="font-mono">PROBE_API_URL</span> 以启用服务器探针导入。
+              </div>
+            )}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-zinc-600 dark:text-zinc-300">Status (Uptime Kuma)</span>
+              <Badge tone={env.STATUS_API_URL ? "green" : "zinc"}>
+                {env.STATUS_API_URL ? "已配置" : "未配置"}
+              </Badge>
+            </div>
+            {env.STATUS_API_URL ? (
+              <div className="mt-1 truncate font-mono text-xs text-zinc-500">
+                {env.STATUS_API_URL}
+              </div>
+            ) : (
+              <div className="mt-1 text-xs text-zinc-500">
+                设置 <span className="font-mono">STATUS_API_URL</span> 以启用应用监控导入。
+              </div>
+            )}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-zinc-600 dark:text-zinc-300">Cloudflare</span>
+              <Badge tone={env.CLOUDFLARE_API_TOKEN ? "green" : "zinc"}>
+                {env.CLOUDFLARE_API_TOKEN ? "已配置" : "未配置"}
+              </Badge>
+            </div>
+            {!env.CLOUDFLARE_API_TOKEN ? (
+              <div className="mt-1 text-xs text-zinc-500">
+                设置 <span className="font-mono">CLOUDFLARE_API_TOKEN</span> 以启用域名 DNS 管理。
+              </div>
+            ) : (
+              <div className="mt-1 text-xs text-zinc-500">Token 已配置，可管理域名。</div>
+            )}
+          </div>
+        </div>
+      </Card>
+
+      <Card>
         <div className="text-sm font-medium text-zinc-800 dark:text-zinc-200">导入</div>
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
           使用导出文件恢复/迁移数据。导入会覆盖远端 JSON 文件。

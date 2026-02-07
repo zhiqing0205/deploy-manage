@@ -13,6 +13,7 @@ export type ServiceFormValues = {
   status?: "active" | "paused" | "archived";
   deploymentType?: "docker" | "vercel" | "reverse_proxy" | "static" | "other";
   repoUrl?: string;
+  github?: string;
   urlsText?: string;
   managementUrlsText?: string;
   healthcheckUrl?: string;
@@ -96,14 +97,22 @@ export function ServiceForm({
             placeholder="https://github.com/..."
           />
         </Field>
-        <Field label="健康检查 URL">
+        <Field label="GitHub 源码">
           <Input
-            name="healthcheckUrl"
-            defaultValue={defaultValues?.healthcheckUrl ?? ""}
-            placeholder="https://example.com/health"
+            name="github"
+            defaultValue={defaultValues?.github ?? ""}
+            placeholder="https://github.com/user/repo"
           />
         </Field>
       </div>
+
+      <Field label="健康检查 URL">
+        <Input
+          name="healthcheckUrl"
+          defaultValue={defaultValues?.healthcheckUrl ?? ""}
+          placeholder="https://example.com/health"
+        />
+      </Field>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="访问地址" hint="每行一个；可选 label | url">

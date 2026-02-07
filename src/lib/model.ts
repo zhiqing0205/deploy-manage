@@ -19,6 +19,22 @@ export const ServerSchema = z
     panelUrl: z.string().trim().url().optional(),
     tags: z.array(z.string().trim().min(1)).catch([]),
     notes: z.string().catch(""),
+
+    // Probe (Komari) integration
+    probeUuid: z.string().trim().min(1).optional(),
+    cpuName: z.string().trim().min(1).optional(),
+    cpuCores: z.number().int().positive().optional(),
+    os: z.string().trim().min(1).optional(),
+    arch: z.string().trim().min(1).optional(),
+    memTotal: z.number().int().nonnegative().optional(),
+    diskTotal: z.number().int().nonnegative().optional(),
+
+    // Billing
+    price: z.number().nonnegative().optional(),
+    billingCycle: z.string().trim().min(1).optional(),
+    currency: z.string().trim().min(1).optional(),
+    expiredAt: z.string().datetime().optional(),
+
     createdAt: z.string().datetime().catch(new Date(0).toISOString()),
     updatedAt: z.string().datetime().catch(new Date(0).toISOString()),
   })
@@ -56,11 +72,17 @@ export const ServiceSchema = z
     status: z.enum(["active", "paused", "archived"]).catch("active"),
     deploymentType: DeploymentTypeSchema.catch("other"),
     repoUrl: z.string().trim().url().optional(),
+    github: z.string().trim().url().optional(),
     urls: z.array(UrlItemSchema).catch([]),
     managementUrls: z.array(UrlItemSchema).catch([]),
     healthcheckUrl: z.string().trim().url().optional(),
     tags: z.array(z.string().trim().min(1)).catch([]),
     notes: z.string().catch(""),
+
+    // Uptime Kuma integration
+    monitorId: z.number().int().positive().optional(),
+    monitorGroup: z.string().trim().min(1).optional(),
+
     proxy: z
       .object({
         type: ProxyTypeSchema.catch("none"),
@@ -88,7 +110,7 @@ export type Service = z.infer<typeof ServiceSchema>;
 
 export const DataFileSchema = z
   .object({
-    version: z.literal(1).catch(1),
+    version: z.literal(2).catch(2),
     servers: z.array(ServerSchema).catch([]),
     services: z.array(ServiceSchema).catch([]),
   })

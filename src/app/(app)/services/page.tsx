@@ -2,6 +2,12 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 
 import { listServers, listServices } from "@/lib/data";
+import {
+  fetchRemoteServicesAction,
+  importServicesAction,
+  type RemoteService,
+} from "@/app/actions/sync";
+import { ImportRemoteDialog, type ImportItem } from "@/components/forms/ImportRemoteDialog";
 import { Badge, ButtonLink, Card, Input, Select, SubtleLink } from "@/components/ui";
 
 type SearchParams = {
@@ -13,6 +19,25 @@ type SearchParams = {
 function pickFirst(v: string | string[] | undefined): string | undefined {
   if (Array.isArray(v)) return v[0];
   return v;
+}
+
+async function fetchAction(): Promise<{ data: (RemoteService & ImportItem)[] } | { error: string }> {
+  "use server";
+  const res = await fetchRemoteServicesAction();
+  if ("error" in res) return res;
+  return {
+    data: res.data.map((s) => ({
+      ...s,
+      id: s.monitorId,
+      name: s.name,
+      detail: `${s.group} · ${s.type}`,
+    })),
+  };
+}
+
+async function importAction(ids: (string | number)[]): Promise<{ count: number } | { error: string }> {
+  "use server";
+  return importServicesAction(ids.map(Number));
 }
 
 export default async function ServicesPage({
@@ -57,10 +82,17 @@ export default async function ServicesPage({
             统一记录域名、部署方式、反代信息与管理入口。
           </p>
         </div>
-        <ButtonLink href="/services/new" tone="blue">
-          <Plus className="h-4 w-4" />
-          新增应用
-        </ButtonLink>
+        <div className="flex flex-wrap gap-2">
+          <ImportRemoteDialog
+            title="导入应用（Status Monitor）"
+            fetchAction={fetchAction}
+            importAction={importAction}
+          />
+          <ButtonLink href="/services/new" tone="blue">
+            <Plus className="h-4 w-4" />
+            新增应用
+          </ButtonLink>
+        </div>
       </div>
 
       <form className="grid gap-3 sm:grid-cols-3" action="/services" method="get">

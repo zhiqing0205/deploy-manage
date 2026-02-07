@@ -4,6 +4,7 @@ import {
   ArrowUpRight,
   Boxes,
   Database,
+  Globe,
   Plus,
   Server,
   Settings,
@@ -20,6 +21,7 @@ export default async function DashboardPage() {
   const activeServices = services.filter((s) => s.status === "active");
   const env = getEnv();
   const authEnabled = hasAuthEnabled();
+  const hasCf = Boolean(env.CLOUDFLARE_API_TOKEN);
 
   return (
     <div className="space-y-8">
@@ -69,7 +71,7 @@ export default async function DashboardPage() {
         </div>
       </Card>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="服务器"
           icon={Server}
@@ -90,6 +92,13 @@ export default async function DashboardPage() {
           value={activeServices.length}
           href="/services?status=active"
           linkText="仅看运行中"
+        />
+        <StatCard
+          title="域名"
+          icon={Globe}
+          value={hasCf ? "CF" : "-"}
+          href="/domains"
+          linkText="管理域名"
         />
       </div>
 
@@ -173,7 +182,7 @@ function StatCard({
 }: {
   title: string;
   icon: React.ComponentType<{ className?: string }>;
-  value: number;
+  value: number | string;
   href: string;
   linkText: string;
 }) {

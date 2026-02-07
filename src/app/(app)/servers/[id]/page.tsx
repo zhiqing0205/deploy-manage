@@ -4,6 +4,14 @@ import { notFound } from "next/navigation";
 import { getServerById, listServices } from "@/lib/data";
 import { Badge, ButtonLink, Card, Hr, SubtleLink } from "@/components/ui";
 
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
+}
+
 export default async function ServerDetailPage({
   params,
 }: {
@@ -14,6 +22,8 @@ export default async function ServerDetailPage({
   if (!server) notFound();
 
   const services = (await listServices()).filter((s) => s.serverId === server.id);
+
+  const hasProbeData = Boolean(server.probeUuid);
 
   return (
     <div className="space-y-6">
@@ -43,6 +53,7 @@ export default async function ServerDetailPage({
           {(server.tags ?? []).map((t) => (
             <Badge key={t}>{t}</Badge>
           ))}
+          {hasProbeData ? <Badge tone="blue">Probe 同步</Badge> : null}
         </div>
 
         <Hr />
@@ -70,6 +81,74 @@ export default async function ServerDetailPage({
           </div>
         </dl>
       </Card>
+
+      {hasProbeData ? (
+        <Card>
+          <div className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            硬件规格
+          </div>
+          <Hr />
+          <dl className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <dt className="text-xs text-zinc-500">CPU</dt>
+              <dd className="mt-1 text-sm">{server.cpuName ?? "-"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-zinc-500">核心</dt>
+              <dd className="mt-1 text-sm">{server.cpuCores ?? "-"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-zinc-500">内存</dt>
+              <dd className="mt-1 text-sm">
+                {server.memTotal ? formatBytes(server.memTotal) : "-"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-zinc-500">磁盘</dt>
+              <dd className="mt-1 text-sm">
+                {server.diskTotal ? formatBytes(server.diskTotal) : "-"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-zinc-500">系统</dt>
+              <dd className="mt-1 text-sm">{server.os ?? "-"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-zinc-500">架构</dt>
+              <dd className="mt-1 text-sm">{server.arch ?? "-"}</dd>
+            </div>
+          </dl>
+
+          {(server.price || server.billingCycle || server.expiredAt) ? (
+            <>
+              <Hr />
+              <div className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                账单信息
+              </div>
+              <dl className="mt-4 grid gap-4 sm:grid-cols-3">
+                <div>
+                  <dt className="text-xs text-zinc-500">价格</dt>
+                  <dd className="mt-1 text-sm">
+                    {server.price != null ? `${server.currency ?? ""}${server.price}` : "-"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-zinc-500">计费周期</dt>
+                  <dd className="mt-1 text-sm">{server.billingCycle ?? "-"}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-zinc-500">到期时间</dt>
+                  <dd className="mt-1 text-sm">
+                    {server.expiredAt
+                      ? new Date(server.expiredAt).toLocaleDateString("zh-CN")
+                      : "-"}
+                  </dd>
+                </div>
+              </dl>
+            </>
+          ) : null}
+        </Card>
+      ) : null}
 
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-3">
@@ -131,4 +210,3 @@ export default async function ServerDetailPage({
     </div>
   );
 }
-

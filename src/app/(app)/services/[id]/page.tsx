@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Github } from "lucide-react";
 
 import { getServerById, getServiceById } from "@/lib/data";
 import { Badge, ButtonLink, Card, Hr, SubtleLink } from "@/components/ui";
@@ -44,6 +45,7 @@ export default async function ServiceDetailPage({
           {(service.tags ?? []).map((t) => (
             <Badge key={t}>{t}</Badge>
           ))}
+          {service.monitorGroup ? <Badge tone="amber">{service.monitorGroup}</Badge> : null}
           {server ? (
             <Link href={`/servers/${server.id}`} className="ml-auto">
               <Badge tone="blue">{server.name}</Badge>
@@ -109,6 +111,25 @@ export default async function ServiceDetailPage({
           </div>
 
           <div>
+            <dt className="text-xs text-zinc-500">GitHub</dt>
+            <dd className="mt-1 text-sm">
+              {service.github ? (
+                <a
+                  href={service.github}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:underline"
+                >
+                  <Github className="h-4 w-4" />
+                  {service.github.replace(/^https?:\/\/(www\.)?github\.com\//, "")}
+                </a>
+              ) : (
+                "-"
+              )}
+            </dd>
+          </div>
+
+          <div>
             <dt className="text-xs text-zinc-500">健康检查</dt>
             <dd className="mt-1 text-sm">
               {service.healthcheckUrl ? (
@@ -120,6 +141,18 @@ export default async function ServiceDetailPage({
               )}
             </dd>
           </div>
+
+          {service.monitorId ? (
+            <div>
+              <dt className="text-xs text-zinc-500">监控 ID</dt>
+              <dd className="mt-1 text-sm">
+                <Badge tone="blue">#{service.monitorId}</Badge>
+                {service.monitorGroup ? (
+                  <span className="ml-2 text-xs text-zinc-500">{service.monitorGroup}</span>
+                ) : null}
+              </dd>
+            </div>
+          ) : null}
 
           <div className="sm:col-span-2">
             <dt className="text-xs text-zinc-500">反向代理</dt>
@@ -171,4 +204,3 @@ export default async function ServiceDetailPage({
     </div>
   );
 }
-
