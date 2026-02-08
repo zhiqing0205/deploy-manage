@@ -3,8 +3,10 @@ import {
   Activity,
   ArrowUpRight,
   Boxes,
+  Cloud,
   Database,
   Globe,
+  Layers,
   Plus,
   Server,
   Settings,
@@ -13,18 +15,54 @@ import {
 
 import { listServers, listServices } from "@/lib/data";
 import { getEnv, hasAuthEnabled } from "@/lib/env";
+import { listZones } from "@/lib/api/cloudflare";
 import { Badge, ButtonLink, Card, SectionTitle, SubtleLink } from "@/components/ui";
+
+const DEPLOYMENT_LABELS: Record<string, string> = {
+  docker: "Docker",
+  vercel: "Vercel",
+  reverse_proxy: "反代",
+  static: "静态",
+  other: "其他",
+};
 
 export default async function DashboardPage() {
   const [servers, services] = await Promise.all([listServers(), listServices()]);
 
   const activeServices = services.filter((s) => s.status === "active");
+  const pausedServices = services.filter((s) => s.status === "paused");
   const env = getEnv();
   const authEnabled = hasAuthEnabled();
   const hasCf = Boolean(env.CLOUDFLARE_API_TOKEN);
 
+  let zoneCount = 0;
+  if (hasCf) {
+    try {
+      const zones = await listZones();
+      zoneCount = zones.length;
+    } catch {
+      // ignore
+    }
+  }
+
+  // Deployment type distribution
+  const deployMap = new Map<string, number>();
+  for (const svc of services) {
+    const t = svc.deploymentType;
+    deployMap.set(t, (deployMap.get(t) ?? 0) + 1);
+  }
+  const deployEntries = [...deployMap.entries()].sort((a, b) => b[1] - a[1]);
+
+  // Server utilization (how many services per server)
+  const svcPerServer = new Map<string, number>();
+  for (const svc of services) {
+    if (svc.serverId) svcPerServer.set(svc.serverId, (svcPerServer.get(svc.serverId) ?? 0) + 1);
+  }
+  const unassigned = services.filter((s) => !s.serverId).length;
+
   return (
     <div className="space-y-8">
+      {/* Hero */}
       <Card className="relative overflow-hidden p-6">
         <div className="absolute inset-0 bg-[radial-gradient(900px_circle_at_0%_0%,rgba(59,130,246,0.14),transparent_55%),radial-gradient(700px_circle_at_100%_0%,rgba(16,185,129,0.10),transparent_50%)] dark:bg-[radial-gradient(900px_circle_at_0%_0%,rgba(59,130,246,0.16),transparent_55%),radial-gradient(700px_circle_at_100%_0%,rgba(16,185,129,0.12),transparent_50%)]" />
         <div className="relative">
@@ -50,6 +88,14 @@ export default async function DashboardPage() {
                     数据：{env.DATA_BACKEND}
                   </span>
                 </Badge>
+                {hasCf ? (
+                  <Badge tone="blue">
+                    <span className="inline-flex items-center gap-1">
+                      <Cloud className="h-3.5 w-3.5" />
+                      Cloudflare 已接入
+                    </span>
+                  </Badge>
+                ) : null}
               </div>
             </div>
 
@@ -71,10 +117,12 @@ export default async function DashboardPage() {
         </div>
       </Card>
 
+      {/* Stat cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="服务器"
           icon={Server}
+          iconBg="bg-blue-500/10 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400"
           value={servers.length}
           href="/servers"
           linkText="查看服务器列表"
@@ -82,56 +130,126 @@ export default async function DashboardPage() {
         <StatCard
           title="应用"
           icon={Boxes}
+          iconBg="bg-violet-500/10 text-violet-600 dark:bg-violet-500/15 dark:text-violet-400"
           value={services.length}
+          sub={
+            pausedServices.length > 0
+              ? `${activeServices.length} 运行中 · ${pausedServices.length} 已暂停`
+              : undefined
+          }
           href="/services"
           linkText="查看应用列表"
         />
         <StatCard
           title="运行中"
           icon={Activity}
+          iconBg="bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400"
           value={activeServices.length}
+          sub={
+            services.length > 0
+              ? `${Math.round((activeServices.length / services.length) * 100)}%`
+              : undefined
+          }
           href="/services?status=active"
           linkText="仅看运行中"
         />
         <StatCard
           title="域名"
           icon={Globe}
-          value={hasCf ? "CF" : "-"}
+          iconBg="bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400"
+          value={hasCf ? zoneCount : "-"}
           href="/domains"
           linkText="管理域名"
         />
       </div>
 
+      {/* Distribution row */}
+      {services.length > 0 ? (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {/* Service status bar */}
+          <Card>
+            <SectionTitle>应用状态分布</SectionTitle>
+            <div className="mt-3 flex items-center gap-3">
+              <StatusBar
+                segments={[
+                  { label: "运行中", count: activeServices.length, color: "bg-emerald-500" },
+                  { label: "已暂停", count: pausedServices.length, color: "bg-amber-400" },
+                  {
+                    label: "已归档",
+                    count: services.length - activeServices.length - pausedServices.length,
+                    color: "bg-zinc-300 dark:bg-zinc-600",
+                  },
+                ]}
+                total={services.length}
+              />
+            </div>
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
+              <Legend color="bg-emerald-500" label="运行中" count={activeServices.length} />
+              <Legend color="bg-amber-400" label="已暂停" count={pausedServices.length} />
+              <Legend
+                color="bg-zinc-300 dark:bg-zinc-600"
+                label="已归档"
+                count={services.length - activeServices.length - pausedServices.length}
+              />
+            </div>
+          </Card>
+
+          {/* Deployment types */}
+          <Card>
+            <SectionTitle>部署方式</SectionTitle>
+            <div className="mt-3 space-y-2">
+              {deployEntries.map(([type, count]) => (
+                <div key={type} className="flex items-center gap-3">
+                  <Layers className="h-4 w-4 shrink-0 text-zinc-400" />
+                  <span className="min-w-0 flex-1 text-sm">{DEPLOYMENT_LABELS[type] ?? type}</span>
+                  <Badge>{count}</Badge>
+                  <div className="h-2 w-20 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                    <div
+                      className="h-full rounded-full bg-blue-500"
+                      style={{ width: `${(count / services.length) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      ) : null}
+
+      {/* Recent lists */}
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <div className="flex items-center justify-between gap-3">
             <SectionTitle>最近应用</SectionTitle>
             <SubtleLink href="/services">全部</SubtleLink>
           </div>
-          <ul className="mt-3 space-y-2">
+          <ul className="mt-3 divide-y divide-zinc-100 dark:divide-zinc-800/60">
             {services
               .slice()
               .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
               .slice(0, 6)
               .map((svc) => (
-                <li key={svc.id} className="flex items-center justify-between gap-3">
-                  <Link
-                    href={`/services/${svc.id}`}
-                    className="truncate text-sm font-medium hover:underline"
-                    title={svc.name}
-                  >
-                    <span className="inline-flex items-center gap-2">
-                      <Boxes className="h-4 w-4 text-zinc-400" />
+                <li key={svc.id} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 dark:bg-violet-500/15 dark:text-violet-400">
+                    <Boxes className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <Link
+                      href={`/services/${svc.id}`}
+                      className="block truncate text-sm font-medium hover:underline"
+                      title={svc.name}
+                    >
                       {svc.name}
-                    </span>
-                  </Link>
-                  <span className="shrink-0 text-xs text-zinc-500">
-                    {new Date(svc.updatedAt).toLocaleDateString("zh-CN")}
-                  </span>
+                    </Link>
+                    <div className="truncate text-xs text-zinc-500">
+                      {svc.urls[0]?.url ?? svc.deploymentType}
+                    </div>
+                  </div>
+                  <Badge tone={svc.status === "active" ? "green" : "zinc"}>{svc.status}</Badge>
                 </li>
               ))}
             {services.length === 0 ? (
-              <li className="text-sm text-zinc-500">还没有应用数据。</li>
+              <li className="py-2 text-sm text-zinc-500">还没有应用数据。</li>
             ) : null}
           </ul>
         </Card>
@@ -141,48 +259,73 @@ export default async function DashboardPage() {
             <SectionTitle>最近服务器</SectionTitle>
             <SubtleLink href="/servers">全部</SubtleLink>
           </div>
-          <ul className="mt-3 space-y-2">
+          <ul className="mt-3 divide-y divide-zinc-100 dark:divide-zinc-800/60">
             {servers
               .slice()
               .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
               .slice(0, 6)
-              .map((srv) => (
-                <li key={srv.id} className="flex items-center justify-between gap-3">
-                  <Link
-                    href={`/servers/${srv.id}`}
-                    className="truncate text-sm font-medium hover:underline"
-                    title={srv.name}
-                  >
-                    <span className="inline-flex items-center gap-2">
-                      <Server className="h-4 w-4 text-zinc-400" />
-                      {srv.name}
-                    </span>
-                  </Link>
-                  <span className="shrink-0 text-xs text-zinc-500">
-                    {new Date(srv.updatedAt).toLocaleDateString("zh-CN")}
-                  </span>
-                </li>
-              ))}
+              .map((srv) => {
+                const svcCount = svcPerServer.get(srv.id) ?? 0;
+                return (
+                  <li key={srv.id} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400">
+                      <Server className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <Link
+                        href={`/servers/${srv.id}`}
+                        className="block truncate text-sm font-medium hover:underline"
+                        title={srv.name}
+                      >
+                        {srv.name}
+                      </Link>
+                      <div className="truncate text-xs text-zinc-500">
+                        {[srv.host, srv.region, srv.provider].filter(Boolean).join(" · ") || "未配置"}
+                      </div>
+                    </div>
+                    <Badge tone="blue">{svcCount} 应用</Badge>
+                  </li>
+                );
+              })}
             {servers.length === 0 ? (
-              <li className="text-sm text-zinc-500">还没有服务器数据。</li>
+              <li className="py-2 text-sm text-zinc-500">还没有服务器数据。</li>
             ) : null}
           </ul>
         </Card>
       </div>
+
+      {/* Unassigned hint */}
+      {unassigned > 0 ? (
+        <Card className="border-amber-200/70 dark:border-amber-800/40">
+          <div className="flex items-center gap-3 text-sm text-amber-700 dark:text-amber-300">
+            <Boxes className="h-5 w-5 shrink-0" />
+            <span>
+              有 <strong>{unassigned}</strong> 个应用未关联到任何服务器。
+            </span>
+            <SubtleLink href="/services">去处理</SubtleLink>
+          </div>
+        </Card>
+      ) : null}
     </div>
   );
 }
 
+/* ---- Sub-components ---- */
+
 function StatCard({
   title,
   icon: Icon,
+  iconBg,
   value,
+  sub,
   href,
   linkText,
 }: {
   title: string;
   icon: React.ComponentType<{ className?: string }>;
+  iconBg: string;
   value: number | string;
+  sub?: string;
   href: string;
   linkText: string;
 }) {
@@ -192,8 +335,9 @@ function StatCard({
         <div>
           <SectionTitle>{title}</SectionTitle>
           <div className="mt-2 text-3xl font-semibold tracking-tight">{value}</div>
+          {sub ? <div className="mt-1 text-xs text-zinc-500">{sub}</div> : null}
         </div>
-        <div className="rounded-2xl border border-zinc-200/70 bg-white/60 p-3 text-zinc-800 shadow-sm dark:border-zinc-800/70 dark:bg-zinc-950/40 dark:text-zinc-100">
+        <div className={`rounded-2xl p-3 ${iconBg}`}>
           <Icon className="h-5 w-5" />
         </div>
       </div>
@@ -203,5 +347,39 @@ function StatCard({
         </Link>
       </div>
     </Card>
+  );
+}
+
+function StatusBar({
+  segments,
+  total,
+}: {
+  segments: { label: string; count: number; color: string }[];
+  total: number;
+}) {
+  if (total === 0) return null;
+  return (
+    <div className="flex h-3 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+      {segments.map((seg) =>
+        seg.count > 0 ? (
+          <div
+            key={seg.label}
+            className={`${seg.color} transition-all`}
+            style={{ width: `${(seg.count / total) * 100}%` }}
+            title={`${seg.label}: ${seg.count}`}
+          />
+        ) : null,
+      )}
+    </div>
+  );
+}
+
+function Legend({ color, label, count }: { color: string; label: string; count: number }) {
+  if (count === 0) return null;
+  return (
+    <div className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-400">
+      <div className={`h-2 w-2 rounded-full ${color}`} />
+      {label} {count}
+    </div>
   );
 }
