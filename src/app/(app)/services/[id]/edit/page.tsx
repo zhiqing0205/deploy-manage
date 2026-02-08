@@ -38,6 +38,7 @@ export default async function EditServicePage({
             name: service.name,
             description: service.description ?? "",
             serverId: service.serverId ?? "",
+            proxyServerId: service.proxyServerId ?? "",
             status: service.status,
             deploymentType: service.deploymentType,
             repoUrl: service.repoUrl ?? "",

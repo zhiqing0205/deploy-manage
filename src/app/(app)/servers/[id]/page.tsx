@@ -21,7 +21,9 @@ export default async function ServerDetailPage({
   const server = await getServerById(id);
   if (!server) notFound();
 
-  const services = (await listServices()).filter((s) => s.serverId === server.id);
+  const allServices = await listServices();
+  const services = allServices.filter((s) => s.serverId === server.id);
+  const proxyServices = allServices.filter((s) => s.proxyServerId === server.id && s.serverId !== server.id);
 
   const hasProbeData = Boolean(server.probeUuid);
 
@@ -203,6 +205,36 @@ export default async function ServerDetailPage({
           ) : null}
         </div>
       </div>
+
+      {proxyServices.length > 0 ? (
+        <div className="space-y-3">
+          <h2 className="text-lg font-semibold tracking-tight">反代应用</h2>
+          <p className="text-sm text-zinc-500">
+            以下应用的 DNS 解析到本服务器进行反向代理。
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {proxyServices.map((svc) => (
+              <Card key={svc.id}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <Link
+                      href={`/services/${svc.id}`}
+                      className="block truncate text-base font-semibold hover:underline"
+                      title={svc.name}
+                    >
+                      {svc.name}
+                    </Link>
+                    <div className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
+                      {svc.urls[0]?.url ? svc.urls[0].url : "（未填写访问地址）"}
+                    </div>
+                  </div>
+                  <Badge tone="amber">反代</Badge>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <div>
         <SubtleLink href="/servers">← 返回服务器列表</SubtleLink>

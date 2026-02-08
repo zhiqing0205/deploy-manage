@@ -10,6 +10,7 @@ export type ServiceFormValues = {
   name?: string;
   description?: string;
   serverId?: string;
+  proxyServerId?: string;
   status?: "active" | "paused" | "archived";
   deploymentType?: "docker" | "vercel" | "reverse_proxy" | "static" | "other";
   repoUrl?: string;
@@ -60,10 +61,20 @@ export function ServiceForm({
         />
       </Field>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Field label="所属服务器">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Field label="部署服务器" hint="应用实际运行的服务器">
           <Select name="serverId" defaultValue={defaultValues?.serverId ?? ""}>
             <option value="">（不绑定）</option>
+            {servers.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="反代服务器" hint="DNS 解析到的反代服务器">
+          <Select name="proxyServerId" defaultValue={defaultValues?.proxyServerId ?? ""}>
+            <option value="">（无反代）</option>
             {servers.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}

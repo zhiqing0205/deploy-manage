@@ -117,9 +117,12 @@ export async function updateServer(
 export async function deleteServer(id: string): Promise<void> {
   const { data, etag } = await readDataFile();
   const servers = data.servers.filter((s) => s.id !== id);
-  const services = data.services.map((svc) =>
-    svc.serverId === id ? { ...svc, serverId: undefined, updatedAt: nowIso() } : svc,
-  );
+  const services = data.services.map((svc) => {
+    let updated = svc;
+    if (svc.serverId === id) updated = { ...updated, serverId: undefined, updatedAt: nowIso() };
+    if (svc.proxyServerId === id) updated = { ...updated, proxyServerId: undefined, updatedAt: nowIso() };
+    return updated;
+  });
   await writeDataFile({ ...data, servers, services }, etag);
 }
 

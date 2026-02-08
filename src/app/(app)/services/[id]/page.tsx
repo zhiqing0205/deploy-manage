@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Github } from "lucide-react";
+import { ArrowRight, Github, Globe, Server } from "lucide-react";
 
 import { getServerById, getServiceById } from "@/lib/data";
 import { Badge, ButtonLink, Card, Hr, SubtleLink } from "@/components/ui";
@@ -15,6 +15,7 @@ export default async function ServiceDetailPage({
   if (!service) notFound();
 
   const server = service.serverId ? await getServerById(service.serverId) : undefined;
+  const proxyServer = service.proxyServerId ? await getServerById(service.proxyServerId) : undefined;
   const primaryUrl = service.urls[0]?.url;
 
   return (
@@ -52,6 +53,43 @@ export default async function ServiceDetailPage({
             </Link>
           ) : null}
         </div>
+
+        {/* Proxy chain visualization */}
+        {(proxyServer || server) ? (
+          <>
+            <Hr />
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <div className="flex items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-1.5 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+                <Globe className="h-4 w-4" />
+                <span>DNS</span>
+              </div>
+              <ArrowRight className="h-4 w-4 text-zinc-400" />
+              {proxyServer ? (
+                <>
+                  <Link
+                    href={`/servers/${proxyServer.id}`}
+                    className="flex items-center gap-1.5 rounded-lg bg-violet-50 px-3 py-1.5 text-violet-700 hover:underline dark:bg-violet-950/40 dark:text-violet-300"
+                  >
+                    <Server className="h-4 w-4" />
+                    <span>{proxyServer.name}</span>
+                    <Badge>反代</Badge>
+                  </Link>
+                  <ArrowRight className="h-4 w-4 text-zinc-400" />
+                </>
+              ) : null}
+              {server ? (
+                <Link
+                  href={`/servers/${server.id}`}
+                  className="flex items-center gap-1.5 rounded-lg bg-blue-50 px-3 py-1.5 text-blue-700 hover:underline dark:bg-blue-950/40 dark:text-blue-300"
+                >
+                  <Server className="h-4 w-4" />
+                  <span>{server.name}</span>
+                  <Badge tone="blue">部署</Badge>
+                </Link>
+              ) : null}
+            </div>
+          </>
+        ) : null}
 
         <Hr />
 

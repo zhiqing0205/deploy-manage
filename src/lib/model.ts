@@ -70,6 +70,7 @@ export const ServiceSchema = z
     name: z.string().trim().min(1),
     description: z.string().catch(""),
     serverId: z.string().trim().min(1).optional(),
+    proxyServerId: z.string().trim().min(1).optional(),
     status: z.enum(["active", "paused", "archived"]).catch("active"),
     deploymentType: DeploymentTypeSchema.catch("other"),
     repoUrl: z.string().trim().url().optional(),
