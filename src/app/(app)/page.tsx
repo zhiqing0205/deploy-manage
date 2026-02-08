@@ -6,7 +6,6 @@ import {
   Cloud,
   Database,
   Globe,
-  Layers,
   Plus,
   Server,
   Settings,
@@ -16,6 +15,7 @@ import {
 import { listServers, listServices } from "@/lib/data";
 import { getEnv, hasAuthEnabled } from "@/lib/env";
 import { listZones } from "@/lib/api/cloudflare";
+import { StatusPieChart, DeployBarChart, ServerLoadChart } from "@/components/DashboardCharts";
 import { Badge, ButtonLink, Card, SectionTitle, SubtleLink } from "@/components/ui";
 
 const DEPLOYMENT_LABELS: Record<string, string> = {
@@ -31,6 +31,7 @@ export default async function DashboardPage() {
 
   const activeServices = services.filter((s) => s.status === "active");
   const pausedServices = services.filter((s) => s.status === "paused");
+  const archivedServices = services.filter((s) => s.status === "archived");
   const env = getEnv();
   const authEnabled = hasAuthEnabled();
   const hasCf = Boolean(env.CLOUDFLARE_API_TOKEN);
@@ -59,6 +60,26 @@ export default async function DashboardPage() {
     if (svc.serverId) svcPerServer.set(svc.serverId, (svcPerServer.get(svc.serverId) ?? 0) + 1);
   }
   const unassigned = services.filter((s) => !s.serverId).length;
+
+  // Chart data
+  const statusData = [
+    { name: "运行中", value: activeServices.length },
+    { name: "已暂停", value: pausedServices.length },
+    { name: "已归档", value: archivedServices.length },
+  ].filter((d) => d.value > 0);
+
+  const deployData = deployEntries.map(([type, count]) => ({
+    name: DEPLOYMENT_LABELS[type] ?? type,
+    count,
+  }));
+
+  const serverLoadData = servers
+    .map((srv) => ({
+      name: srv.name.length > 8 ? srv.name.slice(0, 8) + "…" : srv.name,
+      services: svcPerServer.get(srv.id) ?? 0,
+    }))
+    .sort((a, b) => b.services - a.services)
+    .slice(0, 10);
 
   return (
     <div className="space-y-8">
@@ -163,57 +184,34 @@ export default async function DashboardPage() {
         />
       </div>
 
-      {/* Distribution row */}
+      {/* Interactive charts */}
       {services.length > 0 ? (
         <div className="grid gap-4 lg:grid-cols-2">
-          {/* Service status bar */}
           <Card>
             <SectionTitle>应用状态分布</SectionTitle>
-            <div className="mt-3 flex items-center gap-3">
-              <StatusBar
-                segments={[
-                  { label: "运行中", count: activeServices.length, color: "bg-emerald-500" },
-                  { label: "已暂停", count: pausedServices.length, color: "bg-amber-400" },
-                  {
-                    label: "已归档",
-                    count: services.length - activeServices.length - pausedServices.length,
-                    color: "bg-zinc-300 dark:bg-zinc-600",
-                  },
-                ]}
-                total={services.length}
-              />
-            </div>
-            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
-              <Legend color="bg-emerald-500" label="运行中" count={activeServices.length} />
-              <Legend color="bg-amber-400" label="已暂停" count={pausedServices.length} />
-              <Legend
-                color="bg-zinc-300 dark:bg-zinc-600"
-                label="已归档"
-                count={services.length - activeServices.length - pausedServices.length}
-              />
+            <div className="mt-4">
+              <StatusPieChart data={statusData} />
             </div>
           </Card>
 
-          {/* Deployment types */}
           <Card>
             <SectionTitle>部署方式</SectionTitle>
-            <div className="mt-3 space-y-2">
-              {deployEntries.map(([type, count]) => (
-                <div key={type} className="flex items-center gap-3">
-                  <Layers className="h-4 w-4 shrink-0 text-zinc-400" />
-                  <span className="min-w-0 flex-1 text-sm">{DEPLOYMENT_LABELS[type] ?? type}</span>
-                  <Badge>{count}</Badge>
-                  <div className="h-2 w-20 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-                    <div
-                      className="h-full rounded-full bg-blue-500"
-                      style={{ width: `${(count / services.length) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
+            <div className="mt-4">
+              <DeployBarChart data={deployData} />
             </div>
           </Card>
         </div>
+      ) : null}
+
+      {/* Server load chart */}
+      {servers.length > 0 && services.length > 0 ? (
+        <Card>
+          <SectionTitle>服务器负载分布</SectionTitle>
+          <p className="mt-1 text-xs text-zinc-500">每台服务器上部署的应用数量</p>
+          <div className="mt-4">
+            <ServerLoadChart data={serverLoadData} />
+          </div>
+        </Card>
       ) : null}
 
       {/* Recent lists */}
@@ -347,39 +345,5 @@ function StatCard({
         </Link>
       </div>
     </Card>
-  );
-}
-
-function StatusBar({
-  segments,
-  total,
-}: {
-  segments: { label: string; count: number; color: string }[];
-  total: number;
-}) {
-  if (total === 0) return null;
-  return (
-    <div className="flex h-3 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-      {segments.map((seg) =>
-        seg.count > 0 ? (
-          <div
-            key={seg.label}
-            className={`${seg.color} transition-all`}
-            style={{ width: `${(seg.count / total) * 100}%` }}
-            title={`${seg.label}: ${seg.count}`}
-          />
-        ) : null,
-      )}
-    </div>
-  );
-}
-
-function Legend({ color, label, count }: { color: string; label: string; count: number }) {
-  if (count === 0) return null;
-  return (
-    <div className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-400">
-      <div className={`h-2 w-2 rounded-full ${color}`} />
-      {label} {count}
-    </div>
   );
 }
