@@ -4,16 +4,27 @@ import type { DataStore, ReadResult, WriteOptions } from "@/lib/storage/types";
 
 const SYNC_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
+/**
+ * CachedStore wraps a remote DataStore with a local file cache.
+ *
+ * - Self-hosted: reads/writes on local file, background timer syncs to remote.
+ * - Vercel (serverless): reads from /tmp cache when warm, writes go to both
+ *   /tmp and remote immediately (write-through) since setInterval is unreliable
+ *   and /tmp is ephemeral.
+ */
 export class CachedStore implements DataStore {
   private local: LocalJsonStore;
   private remote: DataStore;
   private dirty = false;
   private syncTimer: ReturnType<typeof setInterval> | null = null;
   private initPromise: Promise<void> | null = null;
+  private serverless: boolean;
 
   constructor(remote: DataStore, cachePath: string) {
     this.remote = remote;
-    this.local = new LocalJsonStore(cachePath);
+    this.serverless = Boolean(process.env.VERCEL);
+    const resolvedPath = this.serverless ? `/tmp/${cachePath}` : cachePath;
+    this.local = new LocalJsonStore(resolvedPath);
   }
 
   async read(): Promise<ReadResult> {
@@ -24,7 +35,16 @@ export class CachedStore implements DataStore {
   async write(data: DataFile, options?: WriteOptions): Promise<{ etag?: string }> {
     await this.ensureInit();
     const result = await this.local.write(data, options);
-    this.dirty = true;
+    if (this.serverless) {
+      // Write-through: push to remote immediately (setInterval unreliable)
+      try {
+        await this.remote.write(data);
+      } catch (err) {
+        console.error("[CachedStore] 写穿透到远程失败:", err);
+      }
+    } else {
+      this.dirty = true;
+    }
     return result;
   }
 
@@ -58,7 +78,10 @@ export class CachedStore implements DataStore {
       }
     }
 
-    this.startSync();
+    // Only start background sync for long-lived processes (not serverless)
+    if (!this.serverless) {
+      this.startSync();
+    }
   }
 
   private startSync(): void {
