@@ -117,6 +117,12 @@ export default async function SettingsPage({
             </ButtonLink>
           </div>
 
+          {env.DATA_BACKEND !== "local" ? (
+            <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-xs text-blue-700 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-300">
+              已启用本地缓存加速，所有读写操作在本地完成，每 5 分钟自动同步到远程。
+            </div>
+          ) : null}
+
           <div className="mt-4 text-xs text-zinc-500">
             Vercel 部署请使用 <span className="font-mono">oss</span> 或{" "}
             <span className="font-mono">webdav</span>，不要用{" "}

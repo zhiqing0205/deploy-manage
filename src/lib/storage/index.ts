@@ -1,8 +1,11 @@
 import { getEnv } from "@/lib/env";
+import { CachedStore } from "@/lib/storage/cached";
 import { LocalJsonStore } from "@/lib/storage/local";
 import { OssJsonStore } from "@/lib/storage/oss";
 import type { DataStore } from "@/lib/storage/types";
 import { WebDavJsonStore } from "@/lib/storage/webdav";
+
+const CACHE_PATH = ".data-cache.json";
 
 let store: DataStore | undefined;
 
@@ -19,12 +22,13 @@ export function getDataStore(): DataStore {
     if (!env.WEBDAV_URL) {
       throw new Error("缺少 WEBDAV_URL 环境变量（DATA_BACKEND=webdav）。");
     }
-    store = new WebDavJsonStore(
+    const remote = new WebDavJsonStore(
       env.WEBDAV_URL,
       env.WEBDAV_USERNAME,
       env.WEBDAV_PASSWORD,
       env.WEBDAV_FILE_PATH,
     );
+    store = new CachedStore(remote, CACHE_PATH);
     return store;
   }
 
@@ -39,7 +43,7 @@ export function getDataStore(): DataStore {
         "缺少 OSS 环境变量（DATA_BACKEND=oss）。需要 OSS_REGION/OSS_ACCESS_KEY_ID/OSS_ACCESS_KEY_SECRET/OSS_BUCKET。",
       );
     }
-    store = new OssJsonStore(
+    const remote = new OssJsonStore(
       {
         region: env.OSS_REGION,
         endpoint: env.OSS_ENDPOINT,
@@ -49,6 +53,7 @@ export function getDataStore(): DataStore {
       },
       env.OSS_OBJECT_KEY,
     );
+    store = new CachedStore(remote, CACHE_PATH);
     return store;
   }
 
@@ -56,4 +61,3 @@ export function getDataStore(): DataStore {
   store = new LocalJsonStore(env.DATA_PATH);
   return store;
 }
-
