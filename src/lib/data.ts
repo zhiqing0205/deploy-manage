@@ -55,6 +55,16 @@ export async function reorderServices(ids: string[]): Promise<void> {
   await writeDataFile({ ...data, services }, etag);
 }
 
+export async function getDomainOrder(): Promise<string[]> {
+  const { data } = await readDataFile();
+  return data.domainOrder;
+}
+
+export async function reorderDomains(ids: string[]): Promise<void> {
+  const { data, etag } = await readDataFile();
+  await writeDataFile({ ...data, domainOrder: ids }, etag);
+}
+
 export async function getServerById(id: string): Promise<Server | undefined> {
   const { data } = await readDataFile();
   return data.servers.find((s) => s.id === id);

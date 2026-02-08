@@ -115,6 +115,7 @@ export const DataFileSchema = z
     version: z.literal(2).catch(2),
     servers: z.array(ServerSchema).catch([]),
     services: z.array(ServiceSchema).catch([]),
+    domainOrder: z.array(z.string().trim().min(1)).catch([]),
   })
   .strict();
 
