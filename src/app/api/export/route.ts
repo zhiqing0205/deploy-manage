@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 
-import { readDataFile } from "@/lib/data";
+import { exportDataAction } from "@/app/actions/settings";
 
 export async function GET() {
-  const { data } = await readDataFile();
-  const body = JSON.stringify(data, null, 2) + "\n";
+  const body = await exportDataAction();
 
   return new NextResponse(body, {
     headers: {

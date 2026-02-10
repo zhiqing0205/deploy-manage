@@ -34,9 +34,11 @@ yarn-error.log*
 .env*
 !.env.example
 
-# local data (default DATA_PATH)
+# local data
 data.json
-.data-cache.json
+
+# drizzle
+/drizzle/
 
 # vercel
 .vercel

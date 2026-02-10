@@ -2,7 +2,7 @@ import { ImportForm } from "@/components/forms/ImportForm";
 import { Download } from "lucide-react";
 import { Badge, ButtonLink, Card, Hr, SubtleLink } from "@/components/ui";
 import { getEnv, hasAuthEnabled } from "@/lib/env";
-import { readDataFile } from "@/lib/data";
+import { listServers, listServices } from "@/lib/data";
 
 type SearchParams = {
   import?: string | string[];
@@ -34,8 +34,8 @@ export default async function SettingsPage({
   let counts: { servers: number; services: number } | undefined;
 
   try {
-    const { data } = await readDataFile();
-    counts = { servers: data.servers.length, services: data.services.length };
+    const [serverList, serviceList] = await Promise.all([listServers(), listServices()]);
+    counts = { servers: serverList.length, services: serviceList.length };
   } catch (err: unknown) {
     storeOk = false;
     storeMessage = asErrorMessage(err);
@@ -46,7 +46,7 @@ export default async function SettingsPage({
       <div className="space-y-2">
         <h1 className="text-2xl font-semibold tracking-tight">设置</h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-300">
-          配置数据存储（OSS/WebDAV）与访问鉴权。
+          配置数据存储与访问鉴权。
         </p>
       </div>
 
@@ -68,7 +68,7 @@ export default async function SettingsPage({
               数据存储
             </div>
             <Badge tone={storeOk ? "green" : "red"}>{storeOk ? "可用" : "异常"}</Badge>
-            <Badge>{env.DATA_BACKEND}</Badge>
+            <Badge>Turso</Badge>
             {counts ? (
               <span className="text-xs text-zinc-500">
                 {counts.servers} 服务器 / {counts.services} 应用
@@ -79,29 +79,10 @@ export default async function SettingsPage({
           <Hr />
 
           <div className="space-y-2 text-sm">
-            {env.DATA_BACKEND === "local" ? (
-              <div>
-                <div className="text-zinc-500">本地文件（仅适合本地开发）</div>
-                <div className="mt-1 font-mono text-xs">{env.DATA_PATH}</div>
-              </div>
-            ) : null}
-
-            {env.DATA_BACKEND === "webdav" ? (
-              <div className="space-y-1">
-                <div className="text-zinc-500">WebDAV</div>
-                <div className="font-mono text-xs">{env.WEBDAV_URL ?? "（未配置）"}</div>
-                <div className="font-mono text-xs">{env.WEBDAV_FILE_PATH}</div>
-              </div>
-            ) : null}
-
-            {env.DATA_BACKEND === "oss" ? (
-              <div className="space-y-1">
-                <div className="text-zinc-500">阿里云 OSS</div>
-                <div className="font-mono text-xs">region: {env.OSS_REGION ?? "（未配置）"}</div>
-                <div className="font-mono text-xs">bucket: {env.OSS_BUCKET ?? "（未配置）"}</div>
-                <div className="font-mono text-xs">key: {env.OSS_OBJECT_KEY}</div>
-              </div>
-            ) : null}
+            <div>
+              <div className="text-zinc-500">Turso (Edge SQLite)</div>
+              <div className="mt-1 font-mono text-xs truncate">{env.TURSO_DATABASE_URL}</div>
+            </div>
 
             {!storeOk ? (
               <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">
@@ -115,18 +96,6 @@ export default async function SettingsPage({
               <Download className="h-4 w-4" />
               导出 JSON
             </ButtonLink>
-          </div>
-
-          {env.DATA_BACKEND !== "local" ? (
-            <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-xs text-blue-700 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-300">
-              已启用本地缓存加速，所有读写操作在本地完成，每 5 分钟自动同步到远程。
-            </div>
-          ) : null}
-
-          <div className="mt-4 text-xs text-zinc-500">
-            Vercel 部署请使用 <span className="font-mono">oss</span> 或{" "}
-            <span className="font-mono">webdav</span>，不要用{" "}
-            <span className="font-mono">local</span>。
           </div>
         </Card>
 
@@ -212,7 +181,7 @@ export default async function SettingsPage({
       <Card>
         <div className="text-sm font-medium text-zinc-800 dark:text-zinc-200">导入</div>
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
-          使用导出文件恢复/迁移数据。导入会覆盖远端 JSON 文件。
+          使用导出文件恢复/迁移数据。导入会覆盖数据库中的所有数据。
         </p>
         <div className="mt-4">
           <ImportForm />

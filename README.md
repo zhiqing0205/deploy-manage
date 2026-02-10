@@ -23,7 +23,7 @@
 - 概览仪表盘：服务器、应用、域名一览
 - 选择性远程导入：弹窗展示远程数据，勾选需要的条目导入
 - 路由 Loading（Skeleton）、危险操作确认弹窗、导航高亮
-- 外部存储：WebDAV 或阿里云 OSS（单文件 JSON）
+- 数据存储：Turso（边缘 SQLite 数据库），毫秒级读写，无冷启动延迟
 - 可选登录鉴权（强烈建议开启）
 - 数据导入 / 导出：便于迁移与备份
 
@@ -31,6 +31,7 @@
 
 - Next.js 16 App Router + Server Actions
 - React 19 + TypeScript
+- Turso + Drizzle ORM（边缘 SQLite 数据库）
 - Tailwind CSS v4
 - Radix UI（Dialog / Tooltip 等交互组件）
 - Zod（数据校验）
@@ -42,42 +43,26 @@
 
 ```bash
 cp .env.example .env.local
+# 编辑 .env.local，填入 Turso 数据库地址和 Token
+npx drizzle-kit push   # 创建数据库表
 pnpm dev
 ```
-
-默认会在项目根目录读写 `./data.json`（仅适合本地开发；Vercel 不可持久化本地文件）。
 
 打开 [http://localhost:3000](http://localhost:3000)。
 
 ### 生产部署（Vercel）
 
-1) 选择一个数据后端（推荐 `oss` 或 `webdav`）
+1) 创建 [Turso](https://turso.tech) 数据库，获取数据库 URL 和 Auth Token
 2) 在 Vercel Project -> Settings -> Environment Variables 设置环境变量
-3)（强烈建议）设置 Basic Auth，避免面板被公开访问
+3) 运行 `npx drizzle-kit push` 将 schema 推送到数据库
+4)（强烈建议）设置 Basic Auth，避免面板被公开访问
 
-#### 数据后端
-
-**阿里云 OSS**
-
-| 变量 | 说明 |
-|------|------|
-| `DATA_BACKEND` | `oss` |
-| `OSS_REGION` | 例如 `oss-cn-hangzhou` |
-| `OSS_ACCESS_KEY_ID` | |
-| `OSS_ACCESS_KEY_SECRET` | |
-| `OSS_BUCKET` | |
-| `OSS_OBJECT_KEY` | 可选，默认 `deploy-manage/data.json` |
-| `OSS_ENDPOINT` | 可选，特殊网络 / 自定义域场景使用 |
-
-**WebDAV**
+#### 数据库配置（Turso）
 
 | 变量 | 说明 |
 |------|------|
-| `DATA_BACKEND` | `webdav` |
-| `WEBDAV_URL` | |
-| `WEBDAV_USERNAME` | 可选 |
-| `WEBDAV_PASSWORD` | 可选 |
-| `WEBDAV_FILE_PATH` | 可选，默认 `/deploy-manage/data.json` |
+| `TURSO_DATABASE_URL` | Turso 数据库地址，例如 `libsql://your-db.turso.io` |
+| `TURSO_AUTH_TOKEN` | Turso Auth Token（本地 `file:` 协议可不填） |
 
 #### 登录鉴权（强烈建议）
 
@@ -99,7 +84,14 @@ pnpm dev
 ### 数据导入 / 导出
 
 - 导出：进入「设置」或访问 `/api/export`
-- 导入：「设置」页面选择导出的 JSON 文件导入（会覆盖远端文件）
+- 导入：「设置」页面选择导出的 JSON 文件导入（会覆盖数据库中所有数据）
+
+### 从旧版迁移（WebDAV/OSS → Turso）
+
+1. 在旧版面板导出 JSON 数据（设置页面或 `/api/export`）
+2. 部署新版，配置 Turso 环境变量
+3. 运行 `npx drizzle-kit push` 创建表结构
+4. 在新版设置页面导入 JSON 文件
 
 ### URL 列表格式
 

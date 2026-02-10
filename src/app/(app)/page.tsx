@@ -106,7 +106,7 @@ export default async function DashboardPage() {
                 <Badge>
                   <span className="inline-flex items-center gap-1">
                     <Database className="h-3.5 w-3.5" />
-                    数据：{env.DATA_BACKEND}
+                    数据：Turso
                   </span>
                 </Badge>
                 {hasCf ? (

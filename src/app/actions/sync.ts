@@ -1,12 +1,13 @@
 "use server";
 
+import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { fetchProbeNodes } from "@/lib/api/probe";
 import { fetchStatusMonitors } from "@/lib/api/status";
-import { readDataFile, writeDataFile } from "@/lib/data";
+import { getDb } from "@/lib/db";
+import { servers, services } from "@/lib/db/schema";
 import { createId, nowIso } from "@/lib/ids";
-import type { Server, Service } from "@/lib/model";
 
 // --- Server (Probe) import ---
 
@@ -32,8 +33,9 @@ export async function fetchRemoteServersAction(): Promise<
 > {
   try {
     const nodes = await fetchProbeNodes();
-    const { data } = await readDataFile();
-    const existingUuids = new Set(data.servers.map((s) => s.probeUuid).filter(Boolean));
+    const db = getDb();
+    const allServers = await db.select({ probeUuid: servers.probeUuid }).from(servers);
+    const existingUuids = new Set(allServers.map((s) => s.probeUuid).filter(Boolean));
 
     const list: RemoteServer[] = nodes.map((n) => ({
       uuid: n.uuid,
@@ -66,53 +68,54 @@ export async function importServersAction(
     const selected = nodes.filter((n) => uuids.includes(n.uuid));
     if (selected.length === 0) return { error: "未选择任何服务器。" };
 
-    const { data, etag } = await readDataFile();
-    const servers = [...data.servers];
+    const db = getDb();
+    const allServers = await db.select().from(servers);
+    const byProbeUuid = new Map(allServers.filter((s) => s.probeUuid).map((s) => [s.probeUuid, s]));
     let count = 0;
 
     for (const node of selected) {
-      const existingIdx = servers.findIndex((s) => s.probeUuid === node.uuid);
       const patch = {
-        cpuName: node.cpu_name || undefined,
-        cpuCores: node.cpu_cores || undefined,
-        os: node.os || undefined,
-        arch: node.arch || undefined,
-        memTotal: node.mem_total || undefined,
-        diskTotal: node.disk_total || undefined,
-        price: node.price || undefined,
-        billingCycle: node.billing_cycle === -1 ? "永久" : node.billing_cycle > 0 ? `${node.billing_cycle}天` : undefined,
-        currency: node.currency || undefined,
-        expiredAt: node.expired_at || undefined,
+        cpuName: node.cpu_name || null,
+        cpuCores: node.cpu_cores || null,
+        os: node.os || null,
+        arch: node.arch || null,
+        memTotal: node.mem_total || null,
+        diskTotal: node.disk_total || null,
+        price: node.price || null,
+        billingCycle: node.billing_cycle === -1 ? "永久" : node.billing_cycle > 0 ? `${node.billing_cycle}天` : null,
+        currency: node.currency || null,
+        expiredAt: node.expired_at || null,
       };
 
-      if (existingIdx >= 0) {
-        servers[existingIdx] = {
-          ...servers[existingIdx],
-          ...patch,
-          updatedAt: nowIso(),
-        };
+      const existing = byProbeUuid.get(node.uuid);
+      if (existing) {
+        await db
+          .update(servers)
+          .set({ ...patch, updatedAt: nowIso() })
+          .where(eq(servers.id, existing.id));
       } else {
         const parsedTags = node.tags ? node.tags.split(";").map((t) => t.trim()).filter(Boolean) : [];
-        const newServer: Server = {
+        const now = nowIso();
+        const newServer = {
           id: createId(),
           name: node.name,
-          host: undefined,
-          provider: node.group || undefined,
-          region: node.region || undefined,
-          panelUrl: undefined,
-          tags: parsedTags,
+          host: null,
+          provider: node.group || null,
+          region: node.region || null,
+          panelUrl: null,
+          tags: JSON.stringify(parsedTags),
           notes: "",
           probeUuid: node.uuid,
           ...patch,
-          createdAt: nowIso(),
-          updatedAt: nowIso(),
+          sortOrder: null,
+          createdAt: now,
+          updatedAt: now,
         };
-        servers.push(newServer);
+        await db.insert(servers).values(newServer);
       }
       count++;
     }
 
-    await writeDataFile({ ...data, servers }, etag);
     revalidatePath("/servers");
     revalidatePath("/");
     return { count };
@@ -136,8 +139,9 @@ export async function fetchRemoteServicesAction(): Promise<
 > {
   try {
     const monitors = await fetchStatusMonitors();
-    const { data } = await readDataFile();
-    const existingIds = new Set(data.services.map((s) => s.monitorId).filter(Boolean));
+    const db = getDb();
+    const allServices = await db.select({ monitorId: services.monitorId }).from(services);
+    const existingIds = new Set(allServices.map((s) => s.monitorId).filter(Boolean));
 
     const list: RemoteService[] = monitors.map((m) => ({
       monitorId: m.id,
@@ -161,36 +165,45 @@ export async function importServicesAction(
     const selected = monitors.filter((m) => monitorIds.includes(m.id));
     if (selected.length === 0) return { error: "未选择任何应用。" };
 
-    const { data, etag } = await readDataFile();
-    const services = [...data.services];
-    const existingIds = new Set(services.map((s) => s.monitorId).filter(Boolean));
+    const db = getDb();
+    const allServices = await db.select({ monitorId: services.monitorId }).from(services);
+    const existingIds = new Set(allServices.map((s) => s.monitorId).filter(Boolean));
     let count = 0;
 
     for (const monitor of selected) {
       if (existingIds.has(monitor.id)) continue;
 
-      const newService: Service = {
+      const now = nowIso();
+      const newService = {
         id: createId(),
         name: monitor.name,
         description: "",
+        serverId: null,
+        proxyServerId: null,
         status: "active",
         deploymentType: "other",
-        urls: [],
-        managementUrls: [],
-        tags: [],
+        repoUrl: null,
+        github: null,
+        urls: "[]",
+        managementUrls: "[]",
+        healthcheckUrl: null,
+        tags: "[]",
         notes: "",
         monitorId: monitor.id,
         monitorGroup: monitor.group,
-        createdAt: nowIso(),
-        updatedAt: nowIso(),
+        proxy: null,
+        docker: null,
+        vercel: null,
+        sortOrder: null,
+        createdAt: now,
+        updatedAt: now,
       };
-      services.push(newService);
+      await db.insert(services).values(newService);
       count++;
     }
 
     if (count === 0) return { error: "所选应用已全部导入。" };
 
-    await writeDataFile({ ...data, services }, etag);
     revalidatePath("/services");
     revalidatePath("/");
     return { count };
