@@ -257,6 +257,7 @@ export function DnsRecordTable({
                         <ConfirmSubmitButton
                           confirmText={`确定删除 ${rec.type} 记录 "${rec.name}" 吗？`}
                           tone="red"
+                          className="h-8 px-2.5 text-xs"
                         >
                           删除
                         </ConfirmSubmitButton>

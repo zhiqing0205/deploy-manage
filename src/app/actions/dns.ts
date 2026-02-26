@@ -73,6 +73,7 @@ export async function updateDnsRecordAction(
   try {
     await updateDnsRecord(zoneId, recordId, parsed.data);
     revalidatePath(`/domains/${zoneId}`);
+    revalidatePath("/domains");
     return { ok: true };
   } catch (err: unknown) {
     return { error: err instanceof Error ? err.message : "更新失败。" };
@@ -82,6 +83,7 @@ export async function updateDnsRecordAction(
 export async function deleteDnsRecordAction(zoneId: string, recordId: string): Promise<void> {
   await cfDeleteDnsRecord(zoneId, recordId);
   revalidatePath(`/domains/${zoneId}`);
+  revalidatePath("/domains");
 }
 
 export async function deleteDomainAction(id: string): Promise<void> {

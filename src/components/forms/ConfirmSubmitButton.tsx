@@ -9,17 +9,19 @@ export function ConfirmSubmitButton({
   children,
   confirmText,
   tone = "red",
+  className,
 }: {
   children: string;
   confirmText: string;
   tone?: "red" | "zinc";
+  className?: string;
 }) {
   const { pending } = useFormStatus();
 
   return (
     <Dialog.Root>
       <Dialog.Trigger asChild>
-        <Button type="button" tone={tone === "red" ? "red" : "zinc"} disabled={pending}>
+        <Button type="button" tone={tone === "red" ? "red" : "zinc"} disabled={pending} className={className}>
           {children}
         </Button>
       </Dialog.Trigger>

@@ -3,12 +3,13 @@ import Link from "next/link";
 import { listDomains } from "@/lib/data";
 import { getDnsRecordSummary, type DnsRecordSummary } from "@/lib/api/cloudflare";
 import { fetchRemoteDomainsAction, importDomainsAction } from "@/app/actions/sync";
-import { deleteDomainAction } from "@/app/actions/dns";
+import { deleteDomainAction, updateDnsRecordAction, deleteDnsRecordAction } from "@/app/actions/dns";
 import { reorderDomainsAction } from "@/app/actions/reorder";
 import { ImportRemoteDialog } from "@/components/forms/ImportRemoteDialog";
 import { ConfirmSubmitButton } from "@/components/forms/ConfirmSubmitButton";
+import { RecentDnsTable, type RecentDnsRecord } from "@/components/RecentDnsTable";
 import { SortableGrid } from "@/components/SortableGrid";
-import { Badge, Card } from "@/components/ui";
+import { Badge, Card, SectionTitle } from "@/components/ui";
 
 async function fetchAction() {
   "use server";
@@ -43,6 +44,22 @@ export default async function DomainsPage() {
       if (r.status === "fulfilled") summaryMap.set(d.zoneId, r.value);
     });
   }
+
+  // Collect recent records across all domains, sorted by modified_on, take top 6
+  const zoneNameMap = new Map(importedDomains.map((d) => [d.zoneId, d.name]));
+  const allRecentRecords: RecentDnsRecord[] = [];
+  for (const [zoneId, summary] of summaryMap) {
+    for (const rec of summary.recent) {
+      allRecentRecords.push({
+        ...rec,
+        zoneId,
+        zoneName: zoneNameMap.get(zoneId) ?? zoneId,
+        modified_on: rec.modified_on ?? "",
+      });
+    }
+  }
+  allRecentRecords.sort((a, b) => b.modified_on.localeCompare(a.modified_on));
+  const recentRecords = allRecentRecords.slice(0, 6);
 
   return (
     <div className="space-y-6">
@@ -138,6 +155,19 @@ export default async function DomainsPage() {
             尚未导入任何域名。点击上方「获取远程数据」从 Cloudflare 导入。
           </div>
         </Card>
+      ) : null}
+
+      {recentRecords.length > 0 ? (
+        <div className="space-y-3">
+          <SectionTitle>最近修改的 DNS 记录</SectionTitle>
+          <Card>
+            <RecentDnsTable
+              records={recentRecords}
+              updateAction={updateDnsRecordAction}
+              deleteAction={deleteDnsRecordAction}
+            />
+          </Card>
+        </div>
       ) : null}
     </div>
   );
