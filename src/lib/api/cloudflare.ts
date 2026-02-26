@@ -125,7 +125,7 @@ export type DnsRecordSummary = {
 };
 
 export async function getDnsRecordSummary(zoneId: string): Promise<DnsRecordSummary> {
-  const json = await cfFetch(`/zones/${zoneId}/dns_records?per_page=6&page=1&order=modified_on&direction=desc`);
+  const json = await cfFetch(`/zones/${zoneId}/dns_records?per_page=20&page=1&order=modified_on&direction=desc`);
   const recent = z.array(DnsRecordSchema).parse(json.result);
   const totalCount: number = json.result_info?.total_count ?? recent.length;
   return { totalCount, recent };

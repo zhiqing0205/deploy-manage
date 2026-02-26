@@ -59,7 +59,7 @@ export default async function DomainsPage() {
     }
   }
   allRecentRecords.sort((a, b) => b.modified_on.localeCompare(a.modified_on));
-  const recentRecords = allRecentRecords.slice(0, 6);
+  const recentRecords = allRecentRecords.slice(0, 20);
 
   return (
     <div className="space-y-6">
@@ -112,7 +112,7 @@ export default async function DomainsPage() {
 
                 {summary && summary.recent.length > 0 ? (
                   <div className="mt-3 space-y-1">
-                    {summary.recent.map((rec) => (
+                    {summary.recent.slice(0, 5).map((rec) => (
                       <div
                         key={rec.id}
                         className="flex items-center gap-2 text-xs text-zinc-500"
