@@ -101,31 +101,6 @@ export function ServiceForm({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Repo URL">
-          <Input
-            name="repoUrl"
-            defaultValue={defaultValues?.repoUrl ?? ""}
-            placeholder="https://github.com/..."
-          />
-        </Field>
-        <Field label="GitHub 源码">
-          <Input
-            name="github"
-            defaultValue={defaultValues?.github ?? ""}
-            placeholder="https://github.com/user/repo"
-          />
-        </Field>
-      </div>
-
-      <Field label="健康检查 URL">
-        <Input
-          name="healthcheckUrl"
-          defaultValue={defaultValues?.healthcheckUrl ?? ""}
-          placeholder="https://example.com/health"
-        />
-      </Field>
-
-      <div className="grid gap-4 sm:grid-cols-2">
         <Field label="访问地址" hint="每行一个；可选 label | url">
           <Textarea
             name="urlsText"
@@ -144,69 +119,100 @@ export function ServiceForm({
         </Field>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="标签" hint="逗号或换行分隔">
-          <Input name="tags" defaultValue={defaultValues?.tagsText ?? ""} placeholder="prod, api" />
-        </Field>
-        <Field label="Vercel Project">
-          <Input
-            name="vercelProject"
-            defaultValue={defaultValues?.vercelProject ?? ""}
-            placeholder="my-vercel-project"
-          />
-        </Field>
-      </div>
+      <Field label="标签" hint="逗号或换行分隔">
+        <Input name="tags" defaultValue={defaultValues?.tagsText ?? ""} placeholder="prod, api" />
+      </Field>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Docker Container">
-          <Input
-            name="dockerContainerName"
-            defaultValue={defaultValues?.dockerContainerName ?? ""}
-            placeholder="my-app"
-          />
-        </Field>
-        <Field label="Docker Compose 路径">
-          <Input
-            name="dockerComposePath"
-            defaultValue={defaultValues?.dockerComposePath ?? ""}
-            placeholder="/opt/compose/app.yml"
-          />
-        </Field>
-      </div>
+      <details className="rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+        <summary className="cursor-pointer select-none px-5 py-4 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          高级设置
+        </summary>
+        <div className="space-y-5 px-5 pb-5">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Repo URL">
+              <Input
+                name="repoUrl"
+                defaultValue={defaultValues?.repoUrl ?? ""}
+                placeholder="https://github.com/..."
+              />
+            </Field>
+            <Field label="GitHub 源码">
+              <Input
+                name="github"
+                defaultValue={defaultValues?.github ?? ""}
+                placeholder="https://github.com/user/repo"
+              />
+            </Field>
+          </div>
 
-      <CardLike title="反向代理">
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Field label="类型">
-            <Select name="proxyType" defaultValue={defaultValues?.proxyType ?? "none"}>
-              <option value="none">none</option>
-              <option value="nginx">nginx</option>
-              <option value="caddy">caddy</option>
-              <option value="traefik">traefik</option>
-              <option value="1panel">1panel</option>
-              <option value="other">other</option>
-            </Select>
-          </Field>
-          <Field label="Upstream" hint="可选">
+          <Field label="健康检查 URL">
             <Input
-              name="proxyUpstream"
-              defaultValue={defaultValues?.proxyUpstream ?? ""}
-              placeholder="127.0.0.1:3000"
+              name="healthcheckUrl"
+              defaultValue={defaultValues?.healthcheckUrl ?? ""}
+              placeholder="https://example.com/health"
             />
           </Field>
-          <Field label=" ">
-            <div className="text-xs text-zinc-500 dark:text-zinc-400">
-              可在规则里记录具体反代配置片段。
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Docker Container">
+              <Input
+                name="dockerContainerName"
+                defaultValue={defaultValues?.dockerContainerName ?? ""}
+                placeholder="my-app"
+              />
+            </Field>
+            <Field label="Docker Compose 路径">
+              <Input
+                name="dockerComposePath"
+                defaultValue={defaultValues?.dockerComposePath ?? ""}
+                placeholder="/opt/compose/app.yml"
+              />
+            </Field>
+          </div>
+
+          <Field label="Vercel Project">
+            <Input
+              name="vercelProject"
+              defaultValue={defaultValues?.vercelProject ?? ""}
+              placeholder="my-vercel-project"
+            />
+          </Field>
+
+          <CardLike title="反向代理">
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Field label="类型">
+                <Select name="proxyType" defaultValue={defaultValues?.proxyType ?? "none"}>
+                  <option value="none">none</option>
+                  <option value="nginx">nginx</option>
+                  <option value="caddy">caddy</option>
+                  <option value="traefik">traefik</option>
+                  <option value="1panel">1panel</option>
+                  <option value="other">other</option>
+                </Select>
+              </Field>
+              <Field label="Upstream" hint="可选">
+                <Input
+                  name="proxyUpstream"
+                  defaultValue={defaultValues?.proxyUpstream ?? ""}
+                  placeholder="127.0.0.1:3000"
+                />
+              </Field>
+              <Field label=" ">
+                <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                  可在规则里记录具体反代配置片段。
+                </div>
+              </Field>
             </div>
+            <Field label="规则/备注">
+              <Textarea name="proxyRules" rows={5} defaultValue={defaultValues?.proxyRules ?? ""} />
+            </Field>
+          </CardLike>
+
+          <Field label="备注">
+            <Textarea name="notes" rows={6} defaultValue={defaultValues?.notes ?? ""} />
           </Field>
         </div>
-        <Field label="规则/备注">
-          <Textarea name="proxyRules" rows={5} defaultValue={defaultValues?.proxyRules ?? ""} />
-        </Field>
-      </CardLike>
-
-      <Field label="备注">
-        <Textarea name="notes" rows={6} defaultValue={defaultValues?.notes ?? ""} />
-      </Field>
+      </details>
 
       {state.error ? (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">
