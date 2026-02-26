@@ -125,7 +125,7 @@ export default async function SettingsPage({
       <Card>
         <div className="text-sm font-medium text-zinc-800 dark:text-zinc-200">外部服务集成</div>
         <Hr />
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-zinc-600 dark:text-zinc-300">Probe (Komari)</span>
@@ -173,6 +173,23 @@ export default async function SettingsPage({
               </div>
             ) : (
               <div className="mt-1 text-xs text-zinc-500">Token 已配置，可管理域名。</div>
+            )}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-zinc-600 dark:text-zinc-300">WebDAV 备份</span>
+              <Badge tone={env.WEBDAV_URL ? "green" : "zinc"}>
+                {env.WEBDAV_URL ? "已配置" : "未配置"}
+              </Badge>
+            </div>
+            {env.WEBDAV_URL ? (
+              <div className="mt-1 truncate font-mono text-xs text-zinc-500">
+                {env.WEBDAV_URL}{env.WEBDAV_PATH ? `/${env.WEBDAV_PATH}` : ""}
+              </div>
+            ) : (
+              <div className="mt-1 text-xs text-zinc-500">
+                设置 <span className="font-mono">WEBDAV_URL</span> 等变量以启用自动备份。
+              </div>
             )}
           </div>
         </div>
