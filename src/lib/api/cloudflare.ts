@@ -62,6 +62,7 @@ const DnsRecordSchema = z.object({
   proxied: z.boolean().catch(false),
   ttl: z.number().catch(1),
   priority: z.number().optional(),
+  modified_on: z.string().catch(""),
 });
 
 export type DnsRecord = z.infer<typeof DnsRecordSchema>;
@@ -124,7 +125,7 @@ export type DnsRecordSummary = {
 };
 
 export async function getDnsRecordSummary(zoneId: string): Promise<DnsRecordSummary> {
-  const json = await cfFetch(`/zones/${zoneId}/dns_records?per_page=3&page=1`);
+  const json = await cfFetch(`/zones/${zoneId}/dns_records?per_page=6&page=1&order=modified_on&direction=desc`);
   const recent = z.array(DnsRecordSchema).parse(json.result);
   const totalCount: number = json.result_info?.total_count ?? recent.length;
   return { totalCount, recent };

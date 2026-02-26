@@ -16,9 +16,27 @@ type DnsRecord = {
   proxied: boolean;
   ttl: number;
   priority?: number;
+  modified_on?: string;
 };
 
 const DNS_TYPES = ["A", "AAAA", "CNAME", "MX", "TXT", "NS", "SRV", "CAA"];
+
+function formatRelativeTime(iso: string): string {
+  if (!iso) return "";
+  const date = new Date(iso);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "刚刚";
+  if (diffMin < 60) return `${diffMin} 分钟前`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr} 小时前`;
+  const diffDay = Math.floor(diffHr / 24);
+  if (diffDay < 30) return `${diffDay} 天前`;
+  const diffMonth = Math.floor(diffDay / 30);
+  if (diffMonth < 12) return `${diffMonth} 个月前`;
+  return `${Math.floor(diffMonth / 12)} 年前`;
+}
 
 function InlineForm({
   action,
@@ -39,7 +57,7 @@ function InlineForm({
 
   return (
     <tr className="border-b border-zinc-100 bg-zinc-50/50 dark:border-zinc-800/60 dark:bg-zinc-900/30">
-      <td colSpan={6} className="px-3 py-3">
+      <td colSpan={7} className="px-3 py-3">
         <form action={formAction} className="space-y-3">
           <div className="grid gap-3 sm:grid-cols-6">
             <Select name="type" defaultValue={defaultValues?.type ?? "A"} className="sm:col-span-1">
@@ -136,6 +154,13 @@ export function DnsRecordTable({
   // "new" = creating, a recordId = editing that record, null = none
   const [editingId, setEditingId] = useState<string | null>(null);
 
+  // Sort records by modified_on descending
+  const sortedRecords = [...records].sort((a, b) => {
+    const ma = a.modified_on ?? "";
+    const mb = b.modified_on ?? "";
+    return mb.localeCompare(ma);
+  });
+
   function handleClose() {
     setEditingId(null);
   }
@@ -163,6 +188,7 @@ export function DnsRecordTable({
               <th className="px-3 py-2 font-medium">内容</th>
               <th className="px-3 py-2 font-medium">代理</th>
               <th className="px-3 py-2 font-medium">TTL</th>
+              <th className="px-3 py-2 font-medium">修改时间</th>
               <th className="px-3 py-2 font-medium">操作</th>
             </tr>
           </thead>
@@ -175,7 +201,7 @@ export function DnsRecordTable({
               />
             ) : null}
 
-            {records.map((rec) => {
+            {sortedRecords.map((rec) => {
               if (editingId === rec.id) {
                 const boundUpdate = updateAction.bind(null, rec.id);
                 return (
@@ -212,16 +238,21 @@ export function DnsRecordTable({
                   <td className="px-3 py-2 text-xs text-zinc-500">
                     {rec.ttl === 1 ? "自动" : rec.ttl}
                   </td>
+                  <td className="px-3 py-2 text-xs text-zinc-500">
+                    {rec.modified_on ? formatRelativeTime(rec.modified_on) : "—"}
+                  </td>
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-2">
-                      <button
+                      <Button
                         type="button"
+                        variant="outline"
+                        tone="blue"
                         onClick={() => setEditingId(rec.id)}
-                        className="text-xs text-blue-600 hover:underline"
                         disabled={editingId !== null}
+                        className="h-8 px-2.5 text-xs"
                       >
                         编辑
-                      </button>
+                      </Button>
                       <form action={boundDelete}>
                         <ConfirmSubmitButton
                           confirmText={`确定删除 ${rec.type} 记录 "${rec.name}" 吗？`}
@@ -238,7 +269,7 @@ export function DnsRecordTable({
 
             {records.length === 0 && editingId !== "new" ? (
               <tr>
-                <td colSpan={6} className="px-3 py-4 text-center text-zinc-500">
+                <td colSpan={7} className="px-3 py-4 text-center text-zinc-500">
                   没有 DNS 记录。
                 </td>
               </tr>
