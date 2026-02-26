@@ -60,7 +60,12 @@ export const services = sqliteTable("services", {
   updatedAt: text("updated_at").notNull(),
 });
 
-export const domainOrder = sqliteTable("domain_order", {
-  position: integer("position").primaryKey(),
-  zoneId: text("zone_id").notNull(),
+export const domains = sqliteTable("domains", {
+  id: text("id").primaryKey(),
+  zoneId: text("zone_id").notNull().unique(),
+  name: text("name").notNull(),
+  status: text("status").notNull().default("active"),
+  sortOrder: integer("sort_order"),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
 });

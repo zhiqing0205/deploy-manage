@@ -111,14 +111,24 @@ export const ServiceSchema = z
 
 export type Service = z.infer<typeof ServiceSchema>;
 
+export const DomainExportSchema = z.object({
+  id: z.string().trim().min(1),
+  zoneId: z.string().trim().min(1),
+  name: z.string().trim().min(1),
+  status: z.string().catch("active"),
+  sortOrder: z.number().int().nonnegative().optional(),
+  createdAt: z.string().datetime().catch(new Date(0).toISOString()),
+  updatedAt: z.string().datetime().catch(new Date(0).toISOString()),
+});
+
 export const DataFileSchema = z
   .object({
     version: z.literal(2).catch(2),
     servers: z.array(ServerSchema).catch([]),
     services: z.array(ServiceSchema).catch([]),
     domainOrder: z.array(z.string().trim().min(1)).catch([]),
-  })
-  .strict();
+    domains: z.array(DomainExportSchema).catch([]),
+  });
 
 export type DataFile = z.infer<typeof DataFileSchema>;
 

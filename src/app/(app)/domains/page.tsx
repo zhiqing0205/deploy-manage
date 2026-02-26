@@ -1,81 +1,88 @@
 import Link from "next/link";
 
-import { getDomainOrder } from "@/lib/data";
-import { listZones, getDnsRecordSummary, type Zone, type DnsRecordSummary } from "@/lib/api/cloudflare";
+import { listDomains } from "@/lib/data";
+import { getDnsRecordSummary, type DnsRecordSummary } from "@/lib/api/cloudflare";
+import { fetchRemoteDomainsAction, importDomainsAction } from "@/app/actions/sync";
+import { deleteDomainAction } from "@/app/actions/dns";
 import { reorderDomainsAction } from "@/app/actions/reorder";
+import { ImportRemoteDialog } from "@/components/forms/ImportRemoteDialog";
+import { ConfirmSubmitButton } from "@/components/forms/ConfirmSubmitButton";
 import { SortableGrid } from "@/components/SortableGrid";
 import { Badge, Card } from "@/components/ui";
 
+async function fetchAction() {
+  "use server";
+  const res = await fetchRemoteDomainsAction();
+  if ("error" in res) return res;
+  return {
+    data: res.data.map((d) => ({
+      ...d,
+      id: d.zoneId,
+      detail: d.status,
+      alreadyImported: d.alreadyImported,
+    })),
+  };
+}
+
+async function importAction(ids: (string | number)[]) {
+  "use server";
+  return importDomainsAction(ids.map(String));
+}
+
 export default async function DomainsPage() {
-  let zones: Zone[] = [];
-  let error = "";
+  const importedDomains = await listDomains();
 
-  try {
-    zones = await listZones();
-  } catch (err: unknown) {
-    error = err instanceof Error ? err.message : "获取域名列表失败。";
-  }
-
-  // Apply saved ordering
-  const domainOrder = await getDomainOrder();
-  if (domainOrder.length > 0) {
-    const orderMap = new Map(domainOrder.map((id, idx) => [id, idx]));
-    zones.sort((a, b) => {
-      const oa = orderMap.get(a.id) ?? Number.MAX_SAFE_INTEGER;
-      const ob = orderMap.get(b.id) ?? Number.MAX_SAFE_INTEGER;
-      return oa - ob;
-    });
-  }
-
-  // Fetch DNS summaries in parallel
+  // Fetch DNS summaries in parallel for imported domains
   const summaryMap = new Map<string, DnsRecordSummary>();
-  if (zones.length > 0) {
+  if (importedDomains.length > 0) {
     const results = await Promise.allSettled(
-      zones.map((z) => getDnsRecordSummary(z.id)),
+      importedDomains.map((d) => getDnsRecordSummary(d.zoneId)),
     );
-    zones.forEach((z, i) => {
+    importedDomains.forEach((d, i) => {
       const r = results[i];
-      if (r.status === "fulfilled") summaryMap.set(z.id, r.value);
+      if (r.status === "fulfilled") summaryMap.set(d.zoneId, r.value);
     });
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">域名</h1>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
-          通过 Cloudflare 管理域名与 DNS 记录。
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">域名</h1>
+          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
+            通过 Cloudflare 管理域名与 DNS 记录。
+          </p>
+        </div>
+        <ImportRemoteDialog
+          title="导入域名（Cloudflare）"
+          fetchAction={fetchAction}
+          importAction={importAction}
+        />
       </div>
-
-      {error ? (
-        <Card>
-          <div className="text-sm text-red-700 dark:text-red-300">{error}</div>
-        </Card>
-      ) : null}
 
       <SortableGrid
         onReorder={reorderDomainsAction}
         className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
       >
-        {zones.map((zone) => {
-          const summary = summaryMap.get(zone.id);
+        {importedDomains.map((domain) => {
+          const summary = summaryMap.get(domain.zoneId);
+          const boundDelete = deleteDomainAction.bind(null, domain.id);
           return (
-            <div key={zone.id} data-sort-id={zone.id}>
+            <div key={domain.id} data-sort-id={domain.id}>
               <Card>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <Link
-                      href={`/domains/${zone.id}`}
+                      href={`/domains/${domain.zoneId}`}
                       className="block truncate text-base font-semibold hover:underline"
-                      title={zone.name}
+                      title={domain.name}
                     >
-                      {zone.name}
+                      {domain.name}
                     </Link>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge tone={zone.status === "active" ? "green" : "zinc"}>
-                      {zone.status}
+                    <Badge tone={domain.status === "active" ? "green" : "zinc"}>
+                      {domain.status}
                     </Badge>
                   </div>
                 </div>
@@ -103,13 +110,21 @@ export default async function DomainsPage() {
                   </div>
                 ) : null}
 
-                <div className="mt-4">
+                <div className="mt-4 flex items-center justify-between">
                   <Link
-                    href={`/domains/${zone.id}`}
+                    href={`/domains/${domain.zoneId}`}
                     className="text-sm text-blue-600 hover:underline"
                   >
                     管理 DNS →
                   </Link>
+                  <form action={boundDelete}>
+                    <ConfirmSubmitButton
+                      confirmText={`确定移除域名 "${domain.name}" 吗？（不会影响 Cloudflare 上的数据）`}
+                      tone="red"
+                    >
+                      移除
+                    </ConfirmSubmitButton>
+                  </form>
                 </div>
               </Card>
             </div>
@@ -117,10 +132,10 @@ export default async function DomainsPage() {
         })}
       </SortableGrid>
 
-      {!error && zones.length === 0 ? (
+      {importedDomains.length === 0 ? (
         <Card>
           <div className="text-sm text-zinc-600 dark:text-zinc-300">
-            没有找到域名。请检查 Cloudflare API Token 配置。
+            尚未导入任何域名。点击上方「获取远程数据」从 Cloudflare 导入。
           </div>
         </Card>
       ) : null}

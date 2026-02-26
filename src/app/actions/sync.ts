@@ -3,10 +3,11 @@
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
+import { listZones } from "@/lib/api/cloudflare";
 import { fetchProbeNodes } from "@/lib/api/probe";
 import { fetchStatusMonitors } from "@/lib/api/status";
 import { getDbWithMigrate } from "@/lib/db";
-import { servers, services } from "@/lib/db/schema";
+import { domains, servers, services } from "@/lib/db/schema";
 import { createId, nowIso } from "@/lib/ids";
 
 // --- Server (Probe) import ---
@@ -206,6 +207,75 @@ export async function importServicesAction(
 
     revalidatePath("/services");
     revalidatePath("/");
+    return { count };
+  } catch (err: unknown) {
+    return { error: err instanceof Error ? err.message : "导入失败。" };
+  }
+}
+
+// --- Domain (Cloudflare zones) import ---
+
+export type RemoteDomain = {
+  zoneId: string;
+  name: string;
+  status: string;
+  alreadyImported: boolean;
+};
+
+export async function fetchRemoteDomainsAction(): Promise<
+  { data: RemoteDomain[] } | { error: string }
+> {
+  try {
+    const zones = await listZones();
+    const db = await getDbWithMigrate();
+    const allDomains = await db.select({ zoneId: domains.zoneId }).from(domains);
+    const existingZoneIds = new Set(allDomains.map((d) => d.zoneId));
+
+    const list: RemoteDomain[] = zones.map((z) => ({
+      zoneId: z.id,
+      name: z.name,
+      status: z.status,
+      alreadyImported: existingZoneIds.has(z.id),
+    }));
+
+    return { data: list };
+  } catch (err: unknown) {
+    return { error: err instanceof Error ? err.message : "获取远程域名失败。" };
+  }
+}
+
+export async function importDomainsAction(
+  zoneIds: string[],
+): Promise<{ count: number } | { error: string }> {
+  try {
+    const zones = await listZones();
+    const selected = zones.filter((z) => zoneIds.includes(z.id));
+    if (selected.length === 0) return { error: "未选择任何域名。" };
+
+    const db = await getDbWithMigrate();
+    const allDomains = await db.select({ zoneId: domains.zoneId }).from(domains);
+    const existingZoneIds = new Set(allDomains.map((d) => d.zoneId));
+    let count = 0;
+
+    for (const zone of selected) {
+      if (existingZoneIds.has(zone.id)) continue;
+
+      const now = nowIso();
+      await db.insert(domains).values({
+        id: createId(),
+        zoneId: zone.id,
+        name: zone.name,
+        status: zone.status,
+        sortOrder: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+      count++;
+    }
+
+    if (count === 0) return { error: "所选域名已全部导入。" };
+
+    revalidatePath("/domains");
     return { count };
   } catch (err: unknown) {
     return { error: err instanceof Error ? err.message : "导入失败。" };

@@ -6,7 +6,8 @@ import { redirect } from "next/navigation";
 
 import type { ActionState } from "@/lib/action-state";
 import { getDbWithMigrate } from "@/lib/db";
-import { domainOrder, servers, services } from "@/lib/db/schema";
+import { createId, nowIso } from "@/lib/ids";
+import { domains, servers, services } from "@/lib/db/schema";
 import { DataFileSchema } from "@/lib/model";
 
 function asErrorMessage(err: unknown): string {
@@ -37,7 +38,7 @@ export async function importDataAction(
     const data = parsed.data;
 
     // Clear all tables
-    await db.delete(domainOrder);
+    await db.delete(domains);
     await db.delete(services);
     await db.delete(servers);
 
@@ -97,11 +98,17 @@ export async function importDataAction(
       });
     }
 
-    // Insert domain order
-    if (data.domainOrder.length > 0) {
-      await db.insert(domainOrder).values(
-        data.domainOrder.map((zoneId, i) => ({ position: i, zoneId })),
-      );
+    // Insert domains
+    for (const d of data.domains) {
+      await db.insert(domains).values({
+        id: d.id,
+        zoneId: d.zoneId,
+        name: d.name,
+        status: d.status,
+        sortOrder: d.sortOrder ?? null,
+        createdAt: d.createdAt,
+        updatedAt: d.updatedAt,
+      });
     }
 
     revalidatePath("/");
@@ -119,7 +126,7 @@ export async function exportDataAction(): Promise<string> {
 
   const serverRows = await db.select().from(servers).orderBy(asc(servers.sortOrder), asc(servers.name));
   const serviceRows = await db.select().from(services).orderBy(asc(services.sortOrder), asc(services.name));
-  const domainRows = await db.select().from(domainOrder).orderBy(asc(domainOrder.position));
+  const domainRows = await db.select().from(domains).orderBy(asc(domains.sortOrder), asc(domains.name));
 
   function parseJson<T>(val: string | null, fallback: T): T {
     if (!val) return fallback;
@@ -176,7 +183,16 @@ export async function exportDataAction(): Promise<string> {
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
     })),
-    domainOrder: domainRows.map((r) => r.zoneId),
+    domainOrder: [],
+    domains: domainRows.map((r) => ({
+      id: r.id,
+      zoneId: r.zoneId,
+      name: r.name,
+      status: r.status,
+      sortOrder: r.sortOrder ?? undefined,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+    })),
   };
 
   return JSON.stringify(data, null, 2) + "\n";

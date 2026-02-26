@@ -12,9 +12,8 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
-import { listServers, listServices } from "@/lib/data";
+import { listServers, listServices, listDomains } from "@/lib/data";
 import { getEnv, hasAuthEnabled } from "@/lib/env";
-import { listZones } from "@/lib/api/cloudflare";
 import { StatusPieChart, DeployBarChart, ServerLoadChart } from "@/components/DashboardCharts";
 import { Badge, ButtonLink, Card, SectionTitle, SubtleLink } from "@/components/ui";
 
@@ -27,7 +26,7 @@ const DEPLOYMENT_LABELS: Record<string, string> = {
 };
 
 export default async function DashboardPage() {
-  const [servers, services] = await Promise.all([listServers(), listServices()]);
+  const [servers, services, importedDomains] = await Promise.all([listServers(), listServices(), listDomains()]);
 
   const activeServices = services.filter((s) => s.status === "active");
   const pausedServices = services.filter((s) => s.status === "paused");
@@ -36,15 +35,7 @@ export default async function DashboardPage() {
   const authEnabled = hasAuthEnabled();
   const hasCf = Boolean(env.CLOUDFLARE_API_TOKEN);
 
-  let zoneCount = 0;
-  if (hasCf) {
-    try {
-      const zones = await listZones();
-      zoneCount = zones.length;
-    } catch {
-      // ignore
-    }
-  }
+  const zoneCount = importedDomains.length;
 
   // Deployment type distribution
   const deployMap = new Map<string, number>();

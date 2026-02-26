@@ -2,7 +2,7 @@ import { asc, eq } from "drizzle-orm";
 import { unstable_noStore as noStore } from "next/cache";
 
 import { getDbWithMigrate } from "@/lib/db";
-import { domainOrder, servers, services } from "@/lib/db/schema";
+import { domains, servers, services } from "@/lib/db/schema";
 import { createId, nowIso } from "@/lib/ids";
 import type { Server, Service } from "@/lib/model";
 
@@ -267,25 +267,66 @@ export async function reorderServices(ids: string[]): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// Domain ordering
+// Domains
 // ---------------------------------------------------------------------------
 
-export async function getDomainOrder(): Promise<string[]> {
+export type Domain = {
+  id: string;
+  zoneId: string;
+  name: string;
+  status: string;
+  sortOrder?: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function listDomains(): Promise<Domain[]> {
   noStore();
   const db = await getDbWithMigrate();
   const rows = await db
     .select()
-    .from(domainOrder)
-    .orderBy(asc(domainOrder.position));
-  return rows.map((r) => r.zoneId);
+    .from(domains)
+    .orderBy(asc(domains.sortOrder), asc(domains.name));
+  return rows.map((r) => ({
+    id: r.id,
+    zoneId: r.zoneId,
+    name: r.name,
+    status: r.status,
+    sortOrder: r.sortOrder ?? undefined,
+    createdAt: r.createdAt,
+    updatedAt: r.updatedAt,
+  }));
+}
+
+export async function createDomain(input: {
+  zoneId: string;
+  name: string;
+  status: string;
+}): Promise<Domain> {
+  const db = await getDbWithMigrate();
+  const now = nowIso();
+  const id = createId();
+  const row = {
+    id,
+    zoneId: input.zoneId,
+    name: input.name,
+    status: input.status,
+    sortOrder: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+  await db.insert(domains).values(row);
+  return { ...row, sortOrder: undefined };
+}
+
+export async function deleteDomain(id: string): Promise<void> {
+  const db = await getDbWithMigrate();
+  await db.delete(domains).where(eq(domains.id, id));
 }
 
 export async function reorderDomains(ids: string[]): Promise<void> {
   const db = await getDbWithMigrate();
-  await db.delete(domainOrder);
-  if (ids.length > 0) {
-    await db.insert(domainOrder).values(
-      ids.map((zoneId, i) => ({ position: i, zoneId })),
-    );
+  for (let i = 0; i < ids.length; i++) {
+    await db.update(domains).set({ sortOrder: i }).where(eq(domains.id, ids[i]));
   }
 }

@@ -9,6 +9,7 @@ import {
   updateDnsRecord,
   deleteDnsRecord as cfDeleteDnsRecord,
 } from "@/lib/api/cloudflare";
+import { deleteDomain } from "@/lib/data";
 
 const DnsRecordInputSchema = z.object({
   type: z.string().trim().min(1, "请选择记录类型。"),
@@ -81,5 +82,10 @@ export async function updateDnsRecordAction(
 export async function deleteDnsRecordAction(zoneId: string, recordId: string): Promise<void> {
   await cfDeleteDnsRecord(zoneId, recordId);
   revalidatePath(`/domains/${zoneId}`);
+}
+
+export async function deleteDomainAction(id: string): Promise<void> {
+  await deleteDomain(id);
+  revalidatePath("/domains");
 }
 
