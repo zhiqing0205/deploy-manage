@@ -76,7 +76,8 @@ pnpm dev
 | 变量 | 说明 |
 |------|------|
 | `PROBE_API_URL` | Komari 探针 API 地址，例如 `https://server.ziuch.com/api/nodes` |
-| `STATUS_API_URL` | Uptime Kuma 状态页 API 地址，例如 `https://status.ziuch.com/api/status-page/page` |
+| `UPTIME_URL` | Uptime Kuma 基础地址，例如 `https://status.ziuch.com` |
+| `UPTIME_PAGE` | Uptime Kuma 状态页 slug，例如 `page` |
 | `CLOUDFLARE_API_TOKEN` | Cloudflare API Token，用于域名 DNS 管理 |
 
 配置后在对应页面会出现「获取远程数据」按钮，支持选择性导入。Cloudflare 配置后「域名」页面自动可用。

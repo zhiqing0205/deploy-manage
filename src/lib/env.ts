@@ -7,7 +7,8 @@ const EnvSchema = z.object({
 
   // External services
   PROBE_API_URL: z.string().trim().url().optional(),
-  STATUS_API_URL: z.string().trim().url().optional(),
+  UPTIME_URL: z.string().trim().url().optional(),
+  UPTIME_PAGE: z.string().trim().min(1).optional(),
   CLOUDFLARE_API_TOKEN: z.string().trim().min(1).optional(),
 });
 

@@ -146,17 +146,17 @@ export default async function SettingsPage({
           <div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-zinc-600 dark:text-zinc-300">Status (Uptime Kuma)</span>
-              <Badge tone={env.STATUS_API_URL ? "green" : "zinc"}>
-                {env.STATUS_API_URL ? "已配置" : "未配置"}
+              <Badge tone={env.UPTIME_URL && env.UPTIME_PAGE ? "green" : "zinc"}>
+                {env.UPTIME_URL && env.UPTIME_PAGE ? "已配置" : "未配置"}
               </Badge>
             </div>
-            {env.STATUS_API_URL ? (
+            {env.UPTIME_URL && env.UPTIME_PAGE ? (
               <div className="mt-1 truncate font-mono text-xs text-zinc-500">
-                {env.STATUS_API_URL}
+                {env.UPTIME_URL} / {env.UPTIME_PAGE}
               </div>
             ) : (
               <div className="mt-1 text-xs text-zinc-500">
-                设置 <span className="font-mono">STATUS_API_URL</span> 以启用应用监控导入。
+                设置 <span className="font-mono">UPTIME_URL</span> 和 <span className="font-mono">UPTIME_PAGE</span> 以启用应用监控导入。
               </div>
             )}
           </div>

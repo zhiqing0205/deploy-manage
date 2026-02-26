@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 
 import { listServers, listServices } from "@/lib/data";
+import { fetchHeartbeats, isUptimeConfigured, type Heartbeat } from "@/lib/api/status";
 import {
   fetchRemoteServicesAction,
   importServicesAction,
@@ -10,6 +11,7 @@ import {
 import { reorderServicesAction } from "@/app/actions/reorder";
 import { ImportRemoteDialog, type ImportItem } from "@/components/forms/ImportRemoteDialog";
 import { SortableGrid } from "@/components/SortableGrid";
+import { HeartbeatBar } from "@/components/HeartbeatBar";
 import { Badge, ButtonLink, Card, Input, Select, SubtleLink } from "@/components/ui";
 
 type SearchParams = {
@@ -54,6 +56,16 @@ export default async function ServicesPage({
 
   const [servers, services] = await Promise.all([listServers(), listServices()]);
   const serverNameById = new Map(servers.map((s) => [s.id, s.name] as const));
+
+  // Fetch heartbeat data if Uptime Kuma is configured
+  let heartbeatMap = new Map<number, Heartbeat[]>();
+  if (isUptimeConfigured()) {
+    try {
+      heartbeatMap = await fetchHeartbeats();
+    } catch {
+      // Silently fail — heartbeat display is optional
+    }
+  }
 
   let filtered = services;
   if (q) {
@@ -133,6 +145,7 @@ export default async function ServicesPage({
         {filtered.map((svc) => {
           const serverName = svc.serverId ? serverNameById.get(svc.serverId) : undefined;
           const primaryUrl = svc.urls[0]?.url;
+          const beats = svc.monitorId ? heartbeatMap.get(svc.monitorId) : undefined;
 
           return (
             <div key={svc.id} data-sort-id={svc.id}>
@@ -160,6 +173,8 @@ export default async function ServicesPage({
                   <Badge key={t}>{t}</Badge>
                 ))}
               </div>
+
+              {beats && beats.length > 0 ? <HeartbeatBar beats={beats} /> : null}
 
               <div className="mt-4 flex flex-wrap gap-3">
                 {primaryUrl ? (
