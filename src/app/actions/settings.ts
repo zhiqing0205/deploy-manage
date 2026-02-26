@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import type { ActionState } from "@/lib/action-state";
-import { getDb } from "@/lib/db";
+import { getDbWithMigrate } from "@/lib/db";
 import { domainOrder, servers, services } from "@/lib/db/schema";
 import { DataFileSchema } from "@/lib/model";
 
@@ -33,7 +33,7 @@ export async function importDataAction(
   if (!parsed.success) return { error: "数据结构不符合要求，无法导入。" };
 
   try {
-    const db = getDb();
+    const db = await getDbWithMigrate();
     const data = parsed.data;
 
     // Clear all tables
@@ -115,7 +115,7 @@ export async function importDataAction(
 }
 
 export async function exportDataAction(): Promise<string> {
-  const db = getDb();
+  const db = await getDbWithMigrate();
 
   const serverRows = await db.select().from(servers).orderBy(asc(servers.sortOrder), asc(servers.name));
   const serviceRows = await db.select().from(services).orderBy(asc(services.sortOrder), asc(services.name));

@@ -1,7 +1,7 @@
 import { asc, eq } from "drizzle-orm";
 import { unstable_noStore as noStore } from "next/cache";
 
-import { getDb } from "@/lib/db";
+import { getDbWithMigrate } from "@/lib/db";
 import { domainOrder, servers, services } from "@/lib/db/schema";
 import { createId, nowIso } from "@/lib/ids";
 import type { Server, Service } from "@/lib/model";
@@ -139,7 +139,7 @@ function serviceToRow(s: Omit<Service, "id" | "createdAt" | "updatedAt">) {
 
 export async function listServers(): Promise<Server[]> {
   noStore();
-  const db = getDb();
+  const db = await getDbWithMigrate();
   const rows = await db
     .select()
     .from(servers)
@@ -149,7 +149,7 @@ export async function listServers(): Promise<Server[]> {
 
 export async function getServerById(id: string): Promise<Server | undefined> {
   noStore();
-  const db = getDb();
+  const db = await getDbWithMigrate();
   const rows = await db.select().from(servers).where(eq(servers.id, id));
   return rows[0] ? rowToServer(rows[0]) : undefined;
 }
@@ -157,7 +157,7 @@ export async function getServerById(id: string): Promise<Server | undefined> {
 export async function createServer(
   input: Omit<Server, "id" | "createdAt" | "updatedAt">,
 ): Promise<Server> {
-  const db = getDb();
+  const db = await getDbWithMigrate();
   const now = nowIso();
   const id = createId();
   const row = { id, ...serverToRow(input), createdAt: now, updatedAt: now };
@@ -169,7 +169,7 @@ export async function updateServer(
   id: string,
   patch: Partial<Omit<Server, "id" | "createdAt">>,
 ): Promise<Server> {
-  const db = getDb();
+  const db = await getDbWithMigrate();
   const existing = await db.select().from(servers).where(eq(servers.id, id));
   if (!existing[0]) throw new Error("服务器不存在。");
 
@@ -181,7 +181,7 @@ export async function updateServer(
 }
 
 export async function deleteServer(id: string): Promise<void> {
-  const db = getDb();
+  const db = await getDbWithMigrate();
   await db.delete(servers).where(eq(servers.id, id));
   // Nullify serverId / proxyServerId references on services
   const now = nowIso();
@@ -201,7 +201,7 @@ export async function deleteServer(id: string): Promise<void> {
 }
 
 export async function reorderServers(ids: string[]): Promise<void> {
-  const db = getDb();
+  const db = await getDbWithMigrate();
   for (let i = 0; i < ids.length; i++) {
     await db.update(servers).set({ sortOrder: i }).where(eq(servers.id, ids[i]));
   }
@@ -213,7 +213,7 @@ export async function reorderServers(ids: string[]): Promise<void> {
 
 export async function listServices(): Promise<Service[]> {
   noStore();
-  const db = getDb();
+  const db = await getDbWithMigrate();
   const rows = await db
     .select()
     .from(services)
@@ -223,7 +223,7 @@ export async function listServices(): Promise<Service[]> {
 
 export async function getServiceById(id: string): Promise<Service | undefined> {
   noStore();
-  const db = getDb();
+  const db = await getDbWithMigrate();
   const rows = await db.select().from(services).where(eq(services.id, id));
   return rows[0] ? rowToService(rows[0]) : undefined;
 }
@@ -231,7 +231,7 @@ export async function getServiceById(id: string): Promise<Service | undefined> {
 export async function createService(
   input: Omit<Service, "id" | "createdAt" | "updatedAt">,
 ): Promise<Service> {
-  const db = getDb();
+  const db = await getDbWithMigrate();
   const now = nowIso();
   const id = createId();
   const row = { id, ...serviceToRow(input), createdAt: now, updatedAt: now };
@@ -243,7 +243,7 @@ export async function updateService(
   id: string,
   patch: Partial<Omit<Service, "id" | "createdAt">>,
 ): Promise<Service> {
-  const db = getDb();
+  const db = await getDbWithMigrate();
   const existing = await db.select().from(services).where(eq(services.id, id));
   if (!existing[0]) throw new Error("应用不存在。");
 
@@ -255,12 +255,12 @@ export async function updateService(
 }
 
 export async function deleteService(id: string): Promise<void> {
-  const db = getDb();
+  const db = await getDbWithMigrate();
   await db.delete(services).where(eq(services.id, id));
 }
 
 export async function reorderServices(ids: string[]): Promise<void> {
-  const db = getDb();
+  const db = await getDbWithMigrate();
   for (let i = 0; i < ids.length; i++) {
     await db.update(services).set({ sortOrder: i }).where(eq(services.id, ids[i]));
   }
@@ -272,7 +272,7 @@ export async function reorderServices(ids: string[]): Promise<void> {
 
 export async function getDomainOrder(): Promise<string[]> {
   noStore();
-  const db = getDb();
+  const db = await getDbWithMigrate();
   const rows = await db
     .select()
     .from(domainOrder)
@@ -281,7 +281,7 @@ export async function getDomainOrder(): Promise<string[]> {
 }
 
 export async function reorderDomains(ids: string[]): Promise<void> {
-  const db = getDb();
+  const db = await getDbWithMigrate();
   await db.delete(domainOrder);
   if (ids.length > 0) {
     await db.insert(domainOrder).values(

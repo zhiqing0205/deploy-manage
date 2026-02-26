@@ -37,9 +37,6 @@ yarn-error.log*
 # local data
 data.json
 
-# drizzle
-/drizzle/
-
 # vercel
 .vercel
 

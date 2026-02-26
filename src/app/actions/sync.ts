@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 
 import { fetchProbeNodes } from "@/lib/api/probe";
 import { fetchStatusMonitors } from "@/lib/api/status";
-import { getDb } from "@/lib/db";
+import { getDbWithMigrate } from "@/lib/db";
 import { servers, services } from "@/lib/db/schema";
 import { createId, nowIso } from "@/lib/ids";
 
@@ -33,7 +33,7 @@ export async function fetchRemoteServersAction(): Promise<
 > {
   try {
     const nodes = await fetchProbeNodes();
-    const db = getDb();
+    const db = await getDbWithMigrate();
     const allServers = await db.select({ probeUuid: servers.probeUuid }).from(servers);
     const existingUuids = new Set(allServers.map((s) => s.probeUuid).filter(Boolean));
 
@@ -68,7 +68,7 @@ export async function importServersAction(
     const selected = nodes.filter((n) => uuids.includes(n.uuid));
     if (selected.length === 0) return { error: "未选择任何服务器。" };
 
-    const db = getDb();
+    const db = await getDbWithMigrate();
     const allServers = await db.select().from(servers);
     const byProbeUuid = new Map(allServers.filter((s) => s.probeUuid).map((s) => [s.probeUuid, s]));
     let count = 0;
@@ -139,7 +139,7 @@ export async function fetchRemoteServicesAction(): Promise<
 > {
   try {
     const monitors = await fetchStatusMonitors();
-    const db = getDb();
+    const db = await getDbWithMigrate();
     const allServices = await db.select({ monitorId: services.monitorId }).from(services);
     const existingIds = new Set(allServices.map((s) => s.monitorId).filter(Boolean));
 
@@ -165,7 +165,7 @@ export async function importServicesAction(
     const selected = monitors.filter((m) => monitorIds.includes(m.id));
     if (selected.length === 0) return { error: "未选择任何应用。" };
 
-    const db = getDb();
+    const db = await getDbWithMigrate();
     const allServices = await db.select({ monitorId: services.monitorId }).from(services);
     const existingIds = new Set(allServices.map((s) => s.monitorId).filter(Boolean));
     let count = 0;
