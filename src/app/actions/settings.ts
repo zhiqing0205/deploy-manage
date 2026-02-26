@@ -197,3 +197,17 @@ export async function exportDataAction(): Promise<string> {
 
   return JSON.stringify(data, null, 2) + "\n";
 }
+
+export async function backupToWebDavAction(): Promise<ActionState> {
+  try {
+    const { uploadToWebDav } = await import("@/lib/api/webdav");
+    const body = await exportDataAction();
+    const now = new Date().toISOString().replace(/:/g, "-").replace(/\.\d+Z$/, "Z");
+    const filename = `deploy-manage-${now}.json`;
+    await uploadToWebDav(filename, body);
+    return { ok: true };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { error: `备份失败：${message}` };
+  }
+}

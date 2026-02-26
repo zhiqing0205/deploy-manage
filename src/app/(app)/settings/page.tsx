@@ -1,4 +1,5 @@
 import { ImportForm } from "@/components/forms/ImportForm";
+import { BackupButton } from "@/components/forms/BackupButton";
 import { Download } from "lucide-react";
 import { Badge, ButtonLink, Card, Hr, SubtleLink } from "@/components/ui";
 import { getEnv, hasAuthEnabled } from "@/lib/env";
@@ -96,6 +97,7 @@ export default async function SettingsPage({
               <Download className="h-4 w-4" />
               导出 JSON
             </ButtonLink>
+            {env.WEBDAV_URL ? <BackupButton /> : null}
           </div>
         </Card>
 
