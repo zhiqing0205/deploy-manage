@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Boxes, Database, Globe, Server, ShieldCheck } from "lucide-react";
 
+import { Logo } from "@/components/Logo";
 import { Card, SectionTitle } from "@/components/ui";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -11,7 +12,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <div className="mx-auto grid min-h-dvh max-w-6xl items-center gap-10 px-4 py-12 lg:grid-cols-2">
         <div className="relative">
           <Link href="/" className="inline-flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300">
-            <span className="rounded-xl border border-zinc-200 bg-white/60 px-3 py-1 shadow-sm backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/40">
+            <span className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white/60 px-3 py-1 shadow-sm backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/40">
+              <Logo className="h-4 w-4" />
               DeployManage
             </span>
             <span>统一管理你的部署入口</span>

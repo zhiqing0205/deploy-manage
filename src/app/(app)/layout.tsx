@@ -3,6 +3,7 @@ import Link from "next/link";
 import { LogOut } from "lucide-react";
 
 import { AppNav } from "@/components/AppNav";
+import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui";
 import { logoutAction } from "@/app/actions/auth";
 import { hasAuthEnabled } from "@/lib/env";
@@ -15,7 +16,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-10 border-b border-zinc-200/80 bg-white/80 backdrop-blur dark:border-zinc-800/80 dark:bg-zinc-950/80">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-4 py-3">
           <div className="flex items-center gap-3">
-            <Link href="/" className="text-base font-semibold tracking-tight">
+            <Link href="/" className="flex items-center gap-2 text-base font-semibold tracking-tight">
+              <Logo className="h-6 w-6" />
               DeployManage
             </Link>
             {authEnabled ? (
