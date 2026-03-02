@@ -1,5 +1,4 @@
 import { ImportForm } from "@/components/forms/ImportForm";
-import { BackupButton } from "@/components/forms/BackupButton";
 import { WebDavForm } from "@/components/forms/WebDavForm";
 import { Download } from "lucide-react";
 import { Badge, ButtonLink, Card, Hr, SubtleLink } from "@/components/ui";
@@ -203,13 +202,8 @@ export default async function SettingsPage({
                 }
               : undefined
           }
+          configured={!!webdavConfig}
         />
-
-        {webdavConfig ? (
-          <div className="mt-4">
-            <BackupButton />
-          </div>
-        ) : null}
       </Card>
 
       <Card>
