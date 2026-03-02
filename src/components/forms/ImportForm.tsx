@@ -16,7 +16,13 @@ export function ImportForm() {
   return (
     <form action={formAction} className="space-y-4">
       <Field label="导入 JSON" hint="会覆盖远端数据文件">
-        <Input name="file" type="file" accept="application/json" required />
+        <Input
+          name="file"
+          type="file"
+          accept="application/json"
+          required
+          className="px-0 py-0 file:mr-3 file:h-full file:cursor-pointer file:rounded-l-xl file:border-0 file:bg-zinc-100 file:px-3 file:text-sm file:font-medium file:text-zinc-700 hover:file:bg-zinc-200 dark:file:bg-zinc-800 dark:file:text-zinc-300 dark:hover:file:bg-zinc-700"
+        />
       </Field>
 
       {state.error ? (
