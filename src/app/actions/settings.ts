@@ -9,6 +9,7 @@ import { getDbWithMigrate } from "@/lib/db";
 import { createId, nowIso } from "@/lib/ids";
 import { domains, servers, services } from "@/lib/db/schema";
 import { DataFileSchema } from "@/lib/model";
+import { getWebDavConfig, setSetting, deleteSetting } from "@/lib/data";
 
 function asErrorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
@@ -200,14 +201,63 @@ export async function exportDataAction(): Promise<string> {
 
 export async function backupToWebDavAction(): Promise<ActionState> {
   try {
+    const config = await getWebDavConfig();
+    if (!config) return { error: "WebDAV 未配置，请先在设置中填写。" };
     const { uploadToWebDav } = await import("@/lib/api/webdav");
     const body = await exportDataAction();
     const now = new Date().toISOString().replace(/:/g, "-").replace(/\.\d+Z$/, "Z");
     const filename = `deploy-manage-${now}.json`;
-    await uploadToWebDav(filename, body);
+    await uploadToWebDav(filename, body, config);
     return { ok: true };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     return { error: `备份失败：${message}` };
+  }
+}
+
+export async function saveWebDavSettingsAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const url = (formData.get("url") as string)?.trim() ?? "";
+    const username = (formData.get("username") as string)?.trim() ?? "";
+    const password = (formData.get("password") as string)?.trim() ?? "";
+    const path = (formData.get("path") as string)?.trim() ?? "";
+
+    if (!url) return { error: "WebDAV URL 不能为空。" };
+
+    // Validate URL format
+    try {
+      new URL(url);
+    } catch {
+      return { error: "WebDAV URL 格式不正确。" };
+    }
+
+    await setSetting("webdav_url", url);
+    if (username) await setSetting("webdav_username", username);
+    else await deleteSetting("webdav_username");
+    if (password) await setSetting("webdav_password", password);
+    else await deleteSetting("webdav_password");
+    if (path) await setSetting("webdav_path", path);
+    else await deleteSetting("webdav_path");
+
+    revalidatePath("/settings");
+    return { ok: true };
+  } catch (err: unknown) {
+    return { error: `保存失败：${asErrorMessage(err)}` };
+  }
+}
+
+export async function testWebDavAction(): Promise<ActionState> {
+  try {
+    const config = await getWebDavConfig();
+    if (!config) return { error: "WebDAV 未配置，请先保存设置。" };
+    const { testWebDavConnection } = await import("@/lib/api/webdav");
+    await testWebDavConnection(config);
+    return { ok: true };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { error: `连接失败：${message}` };
   }
 }

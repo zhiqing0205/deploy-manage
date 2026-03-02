@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getEnv } from "@/lib/env";
+import { getWebDavConfig } from "@/lib/data";
 import { exportDataAction } from "@/app/actions/settings";
 import { uploadToWebDav } from "@/lib/api/webdav";
 
@@ -16,10 +17,15 @@ export async function GET(request: Request) {
   }
 
   try {
+    const config = await getWebDavConfig();
+    if (!config) {
+      return NextResponse.json({ error: "WebDAV not configured" }, { status: 500 });
+    }
+
     const body = await exportDataAction();
     const now = new Date().toISOString().replace(/:/g, "-").replace(/\.\d+Z$/, "Z");
     const filename = `deploy-manage-${now}.json`;
-    await uploadToWebDav(filename, body);
+    await uploadToWebDav(filename, body, config);
     return NextResponse.json({ ok: true, filename });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);

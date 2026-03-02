@@ -11,12 +11,6 @@ const EnvSchema = z.object({
   UPTIME_PAGE: z.string().trim().min(1).optional(),
   CLOUDFLARE_API_TOKEN: z.string().trim().min(1).optional(),
 
-  // WebDAV backup
-  WEBDAV_URL: z.string().trim().url().optional(),
-  WEBDAV_USERNAME: z.string().trim().min(1).optional(),
-  WEBDAV_PASSWORD: z.string().trim().min(1).optional(),
-  WEBDAV_PATH: z.string().trim().min(1).optional(),
-
   // Cron
   CRON_SECRET: z.string().trim().min(1).optional(),
 });
