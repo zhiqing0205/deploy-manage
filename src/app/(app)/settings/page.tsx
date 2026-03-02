@@ -1,9 +1,10 @@
 import { ImportForm } from "@/components/forms/ImportForm";
 import { BackupButton } from "@/components/forms/BackupButton";
+import { WebDavForm } from "@/components/forms/WebDavForm";
 import { Download } from "lucide-react";
 import { Badge, ButtonLink, Card, Hr, SubtleLink } from "@/components/ui";
 import { getEnv, hasAuthEnabled } from "@/lib/env";
-import { listServers, listServices } from "@/lib/data";
+import { listServers, listServices, getWebDavConfig } from "@/lib/data";
 
 type SearchParams = {
   import?: string | string[];
@@ -41,6 +42,8 @@ export default async function SettingsPage({
     storeOk = false;
     storeMessage = asErrorMessage(err);
   }
+
+  const webdavConfig = await getWebDavConfig();
 
   return (
     <div className="space-y-6">
@@ -97,7 +100,6 @@ export default async function SettingsPage({
               <Download className="h-4 w-4" />
               导出 JSON
             </ButtonLink>
-            {env.WEBDAV_URL ? <BackupButton /> : null}
           </div>
         </Card>
 
@@ -127,7 +129,7 @@ export default async function SettingsPage({
       <Card>
         <div className="text-sm font-medium text-zinc-800 dark:text-zinc-200">外部服务集成</div>
         <Hr />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-zinc-600 dark:text-zinc-300">Probe (Komari)</span>
@@ -177,24 +179,37 @@ export default async function SettingsPage({
               <div className="mt-1 text-xs text-zinc-500">Token 已配置，可管理域名。</div>
             )}
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-zinc-600 dark:text-zinc-300">WebDAV 备份</span>
-              <Badge tone={env.WEBDAV_URL ? "green" : "zinc"}>
-                {env.WEBDAV_URL ? "已配置" : "未配置"}
-              </Badge>
-            </div>
-            {env.WEBDAV_URL ? (
-              <div className="mt-1 truncate font-mono text-xs text-zinc-500">
-                {env.WEBDAV_URL}{env.WEBDAV_PATH ? `/${env.WEBDAV_PATH}` : ""}
-              </div>
-            ) : (
-              <div className="mt-1 text-xs text-zinc-500">
-                设置 <span className="font-mono">WEBDAV_URL</span> 等变量以启用自动备份。
-              </div>
-            )}
-          </div>
         </div>
+      </Card>
+
+      <Card>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="text-sm font-medium text-zinc-800 dark:text-zinc-200">WebDAV 备份</div>
+          <Badge tone={webdavConfig ? "green" : "zinc"}>
+            {webdavConfig ? "已配置" : "未配置"}
+          </Badge>
+        </div>
+
+        <Hr />
+
+        <WebDavForm
+          defaultValues={
+            webdavConfig
+              ? {
+                  url: webdavConfig.url,
+                  username: webdavConfig.username,
+                  password: webdavConfig.password,
+                  path: webdavConfig.path,
+                }
+              : undefined
+          }
+        />
+
+        {webdavConfig ? (
+          <div className="mt-4">
+            <BackupButton />
+          </div>
+        ) : null}
       </Card>
 
       <Card>
