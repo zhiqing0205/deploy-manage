@@ -1,8 +1,8 @@
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 import { unstable_noStore as noStore } from "next/cache";
 
 import { getDbWithMigrate } from "@/lib/db";
-import { domains, servers, services } from "@/lib/db/schema";
+import { domains, servers, services, settings } from "@/lib/db/schema";
 import { createId, nowIso } from "@/lib/ids";
 import type { Server, Service } from "@/lib/model";
 
@@ -329,4 +329,61 @@ export async function reorderDomains(ids: string[]): Promise<void> {
   for (let i = 0; i < ids.length; i++) {
     await db.update(domains).set({ sortOrder: i }).where(eq(domains.id, ids[i]));
   }
+}
+
+// ---------------------------------------------------------------------------
+// Settings (key-value store)
+// ---------------------------------------------------------------------------
+
+export async function getSetting(key: string): Promise<string | null> {
+  const db = await getDbWithMigrate();
+  const rows = await db.select().from(settings).where(eq(settings.key, key));
+  return rows[0]?.value ?? null;
+}
+
+export async function getSettings(keys: string[]): Promise<Record<string, string>> {
+  const db = await getDbWithMigrate();
+  const rows = await db.select().from(settings).where(inArray(settings.key, keys));
+  const result: Record<string, string> = {};
+  for (const row of rows) {
+    result[row.key] = row.value;
+  }
+  return result;
+}
+
+export async function setSetting(key: string, value: string): Promise<void> {
+  const db = await getDbWithMigrate();
+  const now = nowIso();
+  await db
+    .insert(settings)
+    .values({ key, value, updatedAt: now })
+    .onConflictDoUpdate({ target: settings.key, set: { value, updatedAt: now } });
+}
+
+export async function deleteSetting(key: string): Promise<void> {
+  const db = await getDbWithMigrate();
+  await db.delete(settings).where(eq(settings.key, key));
+}
+
+export type WebDavConfig = {
+  url: string;
+  username: string;
+  password: string;
+  path: string;
+};
+
+export async function getWebDavConfig(): Promise<WebDavConfig | null> {
+  const vals = await getSettings([
+    "webdav_url",
+    "webdav_username",
+    "webdav_password",
+    "webdav_path",
+  ]);
+  if (!vals.webdav_url) return null;
+  return {
+    url: vals.webdav_url,
+    username: vals.webdav_username ?? "",
+    password: vals.webdav_password ?? "",
+    path: vals.webdav_path ?? "",
+  };
 }

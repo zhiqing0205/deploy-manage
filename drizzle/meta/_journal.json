@@ -15,6 +15,13 @@
       "when": 1772195325086,
       "tag": "0001_domain_table",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1772281725086,
+      "tag": "0002_settings_table",
+      "breakpoints": true
     }
   ]
 }
