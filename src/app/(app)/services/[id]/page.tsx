@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowRight, Github, Globe, Server } from "lucide-react";
 
 import { getServerById, getServiceById } from "@/lib/data";
+import { HealthBadge } from "@/components/HealthBadge";
 import { Badge, ButtonLink, Card, Hr, SubtleLink } from "@/components/ui";
 
 export default async function ServiceDetailPage({
@@ -42,6 +43,7 @@ export default async function ServiceDetailPage({
       <Card>
         <div className="flex flex-wrap gap-2">
           <Badge tone={service.status === "active" ? "green" : "zinc"}>{service.status}</Badge>
+          {service.healthcheckUrl ? <HealthBadge url={service.healthcheckUrl} /> : null}
           <Badge>{service.deploymentType}</Badge>
           {(service.tags ?? []).map((t) => (
             <Badge key={t}>{t}</Badge>

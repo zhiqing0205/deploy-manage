@@ -1,7 +1,5 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  serverExternalPackages: ["ali-oss"],
-};
+const nextConfig: NextConfig = {};
 
 export default nextConfig;

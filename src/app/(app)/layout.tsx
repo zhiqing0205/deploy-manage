@@ -4,9 +4,12 @@ import { LogOut } from "lucide-react";
 
 import { AppNav } from "@/components/AppNav";
 import { Logo } from "@/components/Logo";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui";
 import { logoutAction } from "@/app/actions/auth";
 import { hasAuthEnabled } from "@/lib/env";
+
+export const dynamic = "force-dynamic";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const authEnabled = hasAuthEnabled();
@@ -33,6 +36,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
           <div className="flex items-center gap-1">
             <AppNav />
+            <ThemeToggle />
             {authEnabled ? (
               <form action={logoutAction} className="ml-1">
                 <Button type="submit" variant="ghost" className="h-9 px-3">

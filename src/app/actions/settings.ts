@@ -9,7 +9,7 @@ import { getDbWithMigrate } from "@/lib/db";
 import { createId, nowIso } from "@/lib/ids";
 import { domains, servers, services } from "@/lib/db/schema";
 import { DataFileSchema } from "@/lib/model";
-import { getWebDavConfig, setSetting, deleteSetting } from "@/lib/data";
+import { getWebDavConfig, setSetting, getSetting, deleteSetting, parseJson } from "@/lib/data";
 
 function asErrorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
@@ -43,73 +43,79 @@ export async function importDataAction(
     await db.delete(services);
     await db.delete(servers);
 
-    // Insert servers
-    for (const s of data.servers) {
-      await db.insert(servers).values({
-        id: s.id,
-        name: s.name,
-        host: s.host ?? null,
-        provider: s.provider ?? null,
-        region: s.region ?? null,
-        panelUrl: s.panelUrl ?? null,
-        tags: JSON.stringify(s.tags ?? []),
-        notes: s.notes ?? "",
-        probeUuid: s.probeUuid ?? null,
-        cpuName: s.cpuName ?? null,
-        cpuCores: s.cpuCores ?? null,
-        os: s.os ?? null,
-        arch: s.arch ?? null,
-        memTotal: s.memTotal ?? null,
-        diskTotal: s.diskTotal ?? null,
-        price: s.price ?? null,
-        billingCycle: s.billingCycle ?? null,
-        currency: s.currency ?? null,
-        expiredAt: s.expiredAt ?? null,
-        sortOrder: s.sortOrder ?? null,
-        createdAt: s.createdAt,
-        updatedAt: s.updatedAt,
-      });
+    // Insert servers in batch
+    if (data.servers.length > 0) {
+      await db.insert(servers).values(
+        data.servers.map((s) => ({
+          id: s.id,
+          name: s.name,
+          host: s.host ?? null,
+          provider: s.provider ?? null,
+          region: s.region ?? null,
+          panelUrl: s.panelUrl ?? null,
+          tags: JSON.stringify(s.tags ?? []),
+          notes: s.notes ?? "",
+          probeUuid: s.probeUuid ?? null,
+          cpuName: s.cpuName ?? null,
+          cpuCores: s.cpuCores ?? null,
+          os: s.os ?? null,
+          arch: s.arch ?? null,
+          memTotal: s.memTotal ?? null,
+          diskTotal: s.diskTotal ?? null,
+          price: s.price ?? null,
+          billingCycle: s.billingCycle ?? null,
+          currency: s.currency ?? null,
+          expiredAt: s.expiredAt ?? null,
+          sortOrder: s.sortOrder ?? null,
+          createdAt: s.createdAt,
+          updatedAt: s.updatedAt,
+        })),
+      );
     }
 
-    // Insert services
-    for (const s of data.services) {
-      await db.insert(services).values({
-        id: s.id,
-        name: s.name,
-        description: s.description ?? "",
-        serverId: s.serverId ?? null,
-        proxyServerId: s.proxyServerId ?? null,
-        status: s.status ?? "active",
-        deploymentType: s.deploymentType ?? "other",
-        repoUrl: s.repoUrl ?? null,
-        github: s.github ?? null,
-        urls: JSON.stringify(s.urls ?? []),
-        managementUrls: JSON.stringify(s.managementUrls ?? []),
-        healthcheckUrl: s.healthcheckUrl ?? null,
-        tags: JSON.stringify(s.tags ?? []),
-        notes: s.notes ?? "",
-        monitorId: s.monitorId ?? null,
-        monitorGroup: s.monitorGroup ?? null,
-        proxy: s.proxy ? JSON.stringify(s.proxy) : null,
-        docker: s.docker ? JSON.stringify(s.docker) : null,
-        vercel: s.vercel ? JSON.stringify(s.vercel) : null,
-        sortOrder: s.sortOrder ?? null,
-        createdAt: s.createdAt,
-        updatedAt: s.updatedAt,
-      });
+    // Insert services in batch
+    if (data.services.length > 0) {
+      await db.insert(services).values(
+        data.services.map((s) => ({
+          id: s.id,
+          name: s.name,
+          description: s.description ?? "",
+          serverId: s.serverId ?? null,
+          proxyServerId: s.proxyServerId ?? null,
+          status: s.status ?? "active",
+          deploymentType: s.deploymentType ?? "other",
+          repoUrl: s.repoUrl ?? null,
+          github: s.github ?? null,
+          urls: JSON.stringify(s.urls ?? []),
+          managementUrls: JSON.stringify(s.managementUrls ?? []),
+          healthcheckUrl: s.healthcheckUrl ?? null,
+          tags: JSON.stringify(s.tags ?? []),
+          notes: s.notes ?? "",
+          monitorId: s.monitorId ?? null,
+          monitorGroup: s.monitorGroup ?? null,
+          proxy: s.proxy ? JSON.stringify(s.proxy) : null,
+          docker: s.docker ? JSON.stringify(s.docker) : null,
+          vercel: s.vercel ? JSON.stringify(s.vercel) : null,
+          sortOrder: s.sortOrder ?? null,
+          createdAt: s.createdAt,
+          updatedAt: s.updatedAt,
+        })),
+      );
     }
 
-    // Insert domains
-    for (const d of data.domains) {
-      await db.insert(domains).values({
-        id: d.id,
-        zoneId: d.zoneId,
-        name: d.name,
-        status: d.status,
-        sortOrder: d.sortOrder ?? null,
-        createdAt: d.createdAt,
-        updatedAt: d.updatedAt,
-      });
+    // Insert domains in batch
+    if (data.domains.length > 0) {
+      await db.insert(domains).values(
+        data.domains.map((d) => ({
+          id: d.id,
+          zoneId: d.zoneId,
+          name: d.name,
+          status: d.status,
+          sortOrder: d.sortOrder ?? null,
+          createdAt: d.createdAt,
+          updatedAt: d.updatedAt,
+        })),
+      );
     }
 
     revalidatePath("/");
@@ -128,11 +134,6 @@ export async function exportDataAction(): Promise<string> {
   const serverRows = await db.select().from(servers).orderBy(asc(servers.sortOrder), asc(servers.name));
   const serviceRows = await db.select().from(services).orderBy(asc(services.sortOrder), asc(services.name));
   const domainRows = await db.select().from(domains).orderBy(asc(domains.sortOrder), asc(domains.name));
-
-  function parseJson<T>(val: string | null, fallback: T): T {
-    if (!val) return fallback;
-    try { return JSON.parse(val) as T; } catch { return fallback; }
-  }
 
   const data = {
     version: 2 as const,
@@ -203,14 +204,29 @@ export async function backupToWebDavAction(): Promise<ActionState> {
   try {
     const config = await getWebDavConfig();
     if (!config) return { error: "WebDAV 未配置，请先在设置中填写。" };
-    const { uploadToWebDav } = await import("@/lib/api/webdav");
+    const { uploadToWebDav, cleanupOldBackups } = await import("@/lib/api/webdav");
     const body = await exportDataAction();
     const now = new Date().toISOString().replace(/:/g, "-").replace(/\.\d+Z$/, "Z");
     const filename = `deploy-manage-${now}.json`;
     await uploadToWebDav(filename, body, config);
+
+    // Record backup history
+    await setSetting("last_backup_at", new Date().toISOString());
+    await setSetting("last_backup_status", "ok");
+    await setSetting("last_backup_filename", filename);
+
+    // Cleanup old backups if retention is configured
+    const retention = await getSetting("webdav_retention");
+    if (retention) {
+      const max = parseInt(retention, 10);
+      if (max > 0) await cleanupOldBackups(config, max);
+    }
+
     return { ok: true };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
+    await setSetting("last_backup_at", new Date().toISOString());
+    await setSetting("last_backup_status", `error: ${message}`);
     return { error: `备份失败：${message}` };
   }
 }
@@ -224,6 +240,7 @@ export async function saveWebDavSettingsAction(
     const username = (formData.get("username") as string)?.trim() ?? "";
     const password = (formData.get("password") as string)?.trim() ?? "";
     const path = (formData.get("path") as string)?.trim() ?? "";
+    const retention = (formData.get("retention") as string)?.trim() ?? "";
 
     if (!url) return { error: "WebDAV URL 不能为空。" };
 
@@ -241,6 +258,8 @@ export async function saveWebDavSettingsAction(
     else await deleteSetting("webdav_password");
     if (path) await setSetting("webdav_path", path);
     else await deleteSetting("webdav_path");
+    if (retention && parseInt(retention, 10) > 0) await setSetting("webdav_retention", retention);
+    else await deleteSetting("webdav_retention");
 
     revalidatePath("/settings");
     return { ok: true };

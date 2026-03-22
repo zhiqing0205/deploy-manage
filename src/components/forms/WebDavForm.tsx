@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { Plug, Save, Upload } from "lucide-react";
+import { Clock, Plug, Save, Upload } from "lucide-react";
 
 import {
   saveWebDavSettingsAction,
@@ -10,7 +10,7 @@ import {
 } from "@/app/actions/settings";
 import type { ActionState } from "@/lib/action-state";
 import { initialActionState } from "@/lib/action-state";
-import { Button, Field, Input, Spinner } from "@/components/ui";
+import { Badge, Button, Field, Input, Spinner } from "@/components/ui";
 
 async function testAction(_prev: ActionState, _formData: FormData): Promise<ActionState> {
   return testWebDavAction();
@@ -20,12 +20,25 @@ async function backupAction(_prev: ActionState, _formData: FormData): Promise<Ac
   return backupToWebDavAction();
 }
 
+function formatBackupTime(iso: string): string {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" });
+  } catch {
+    return iso;
+  }
+}
+
 export function WebDavForm({
   defaultValues,
   configured,
+  lastBackup,
+  cronConfigured,
 }: {
-  defaultValues?: { url?: string; username?: string; password?: string; path?: string };
+  defaultValues?: { url?: string; username?: string; password?: string; path?: string; retention?: string };
   configured?: boolean;
+  lastBackup?: { at?: string; status?: string; filename?: string };
+  cronConfigured?: boolean;
 }) {
   const [saveState, saveFormAction, savePending] = useActionState<ActionState, FormData>(
     saveWebDavSettingsAction,
@@ -44,6 +57,37 @@ export function WebDavForm({
 
   return (
     <div className="space-y-4">
+      {/* Cron status */}
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        <Clock className="h-3.5 w-3.5 text-zinc-400" />
+        <span className="text-zinc-500">定时备份（每日 02:00 UTC）</span>
+        <Badge tone={cronConfigured ? "green" : "red"}>
+          {cronConfigured ? "CRON_SECRET 已配置" : "CRON_SECRET 未配置"}
+        </Badge>
+        {!cronConfigured && (
+          <span className="text-zinc-400">请在 Vercel 环境变量中设置 CRON_SECRET</span>
+        )}
+      </div>
+
+      {/* Last backup info */}
+      {lastBackup?.at && (
+        <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-zinc-500">上次备份：</span>
+            <span className="font-medium">{formatBackupTime(lastBackup.at)}</span>
+            <Badge tone={lastBackup.status === "ok" ? "green" : "red"}>
+              {lastBackup.status === "ok" ? "成功" : "失败"}
+            </Badge>
+          </div>
+          {lastBackup.filename && lastBackup.status === "ok" && (
+            <div className="mt-1 truncate text-zinc-400">{lastBackup.filename}</div>
+          )}
+          {lastBackup.status && lastBackup.status !== "ok" && (
+            <div className="mt-1 text-red-500 dark:text-red-400">{lastBackup.status}</div>
+          )}
+        </div>
+      )}
+
       <form id="webdav-save" action={saveFormAction} className="space-y-4">
         <Field label="WebDAV URL" hint="必填">
           <Input
@@ -73,13 +117,24 @@ export function WebDavForm({
           </Field>
         </div>
 
-        <Field label="路径" hint="子目录，可选">
-          <Input
-            name="path"
-            placeholder="backup/manage"
-            defaultValue={defaultValues?.path ?? ""}
-          />
-        </Field>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="路径" hint="子目录，可选">
+            <Input
+              name="path"
+              placeholder="backup/manage"
+              defaultValue={defaultValues?.path ?? ""}
+            />
+          </Field>
+          <Field label="保留数量" hint="自动清理旧备份，0 为不限制">
+            <Input
+              name="retention"
+              type="number"
+              min="0"
+              placeholder="30"
+              defaultValue={defaultValues?.retention ?? "30"}
+            />
+          </Field>
+        </div>
       </form>
 
       <div className="flex flex-wrap items-center gap-3">

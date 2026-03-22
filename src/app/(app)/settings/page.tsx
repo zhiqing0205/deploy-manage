@@ -3,7 +3,7 @@ import { WebDavForm } from "@/components/forms/WebDavForm";
 import { Download } from "lucide-react";
 import { Badge, ButtonLink, Card, Hr, SubtleLink } from "@/components/ui";
 import { getEnv, hasAuthEnabled } from "@/lib/env";
-import { listServers, listServices, getWebDavConfig } from "@/lib/data";
+import { listServers, listServices, getWebDavConfig, getSettings } from "@/lib/data";
 
 type SearchParams = {
   import?: string | string[];
@@ -43,6 +43,13 @@ export default async function SettingsPage({
   }
 
   const webdavConfig = await getWebDavConfig();
+  const backupInfo = await getSettings([
+    "last_backup_at",
+    "last_backup_status",
+    "last_backup_filename",
+    "webdav_retention",
+  ]);
+  const cronConfigured = Boolean(env.CRON_SECRET);
 
   return (
     <div className="space-y-6">
@@ -199,10 +206,21 @@ export default async function SettingsPage({
                   username: webdavConfig.username,
                   password: webdavConfig.password,
                   path: webdavConfig.path,
+                  retention: backupInfo.webdav_retention ?? "30",
                 }
               : undefined
           }
           configured={!!webdavConfig}
+          lastBackup={
+            backupInfo.last_backup_at
+              ? {
+                  at: backupInfo.last_backup_at,
+                  status: backupInfo.last_backup_status,
+                  filename: backupInfo.last_backup_filename,
+                }
+              : undefined
+          }
+          cronConfigured={cronConfigured}
         />
       </Card>
 

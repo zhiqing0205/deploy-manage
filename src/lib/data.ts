@@ -1,4 +1,4 @@
-import { asc, eq, inArray } from "drizzle-orm";
+import { asc, eq, inArray, or } from "drizzle-orm";
 import { unstable_noStore as noStore } from "next/cache";
 
 import { getDbWithMigrate } from "@/lib/db";
@@ -10,7 +10,7 @@ import type { Server, Service } from "@/lib/model";
 // JSON column helpers
 // ---------------------------------------------------------------------------
 
-function parseJson<T>(val: string | null, fallback: T): T {
+export function parseJson<T>(val: string | null, fallback: T): T {
   if (!val) return fallback;
   try {
     return JSON.parse(val) as T;
@@ -185,19 +185,14 @@ export async function deleteServer(id: string): Promise<void> {
   await db.delete(servers).where(eq(servers.id, id));
   // Nullify serverId / proxyServerId references on services
   const now = nowIso();
-  const allSvcs = await db.select().from(services);
-  for (const svc of allSvcs) {
-    if (svc.serverId === id || svc.proxyServerId === id) {
-      await db
-        .update(services)
-        .set({
-          serverId: svc.serverId === id ? null : svc.serverId,
-          proxyServerId: svc.proxyServerId === id ? null : svc.proxyServerId,
-          updatedAt: now,
-        })
-        .where(eq(services.id, svc.id));
-    }
-  }
+  await db
+    .update(services)
+    .set({ serverId: null, updatedAt: now })
+    .where(eq(services.serverId, id));
+  await db
+    .update(services)
+    .set({ proxyServerId: null, updatedAt: now })
+    .where(eq(services.proxyServerId, id));
 }
 
 export async function reorderServers(ids: string[]): Promise<void> {

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   Activity,
+  AlertTriangle,
   ArrowUpRight,
   Boxes,
   Cloud,
@@ -51,6 +52,19 @@ export default async function DashboardPage() {
     if (svc.serverId) svcPerServer.set(svc.serverId, (svcPerServer.get(svc.serverId) ?? 0) + 1);
   }
   const unassigned = services.filter((s) => !s.serverId).length;
+
+  // Servers expiring within 7 days
+  const now = new Date();
+  const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const expiringServers = servers.filter((srv) => {
+    if (!srv.expiredAt) return false;
+    const exp = new Date(srv.expiredAt);
+    return exp <= sevenDaysLater && exp >= now;
+  });
+  const expiredServers = servers.filter((srv) => {
+    if (!srv.expiredAt) return false;
+    return new Date(srv.expiredAt) < now;
+  });
 
   // Chart data
   const statusData = [
@@ -282,6 +296,33 @@ export default async function DashboardPage() {
           </ul>
         </Card>
       </div>
+
+      {/* Expiring / expired servers warning */}
+      {(expiringServers.length > 0 || expiredServers.length > 0) ? (
+        <Card className="border-red-200/70 dark:border-red-800/40">
+          <div className="space-y-2">
+            {expiredServers.length > 0 && (
+              <div className="flex items-center gap-3 text-sm text-red-700 dark:text-red-300">
+                <AlertTriangle className="h-5 w-5 shrink-0" />
+                <span>
+                  <strong>{expiredServers.length}</strong> 台服务器已过期：
+                  {expiredServers.map((s) => s.name).join("、")}
+                </span>
+              </div>
+            )}
+            {expiringServers.length > 0 && (
+              <div className="flex items-center gap-3 text-sm text-amber-700 dark:text-amber-300">
+                <AlertTriangle className="h-5 w-5 shrink-0" />
+                <span>
+                  <strong>{expiringServers.length}</strong> 台服务器将在 7 天内到期：
+                  {expiringServers.map((s) => s.name).join("、")}
+                </span>
+                <SubtleLink href="/servers">查看</SubtleLink>
+              </div>
+            )}
+          </div>
+        </Card>
+      ) : null}
 
       {/* Unassigned hint */}
       {unassigned > 0 ? (

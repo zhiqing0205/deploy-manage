@@ -12,6 +12,7 @@ import { reorderServicesAction } from "@/app/actions/reorder";
 import { ImportRemoteDialog, type ImportItem } from "@/components/forms/ImportRemoteDialog";
 import { SortableGrid } from "@/components/SortableGrid";
 import { HeartbeatBar } from "@/components/HeartbeatBar";
+import { HealthBadge } from "@/components/HealthBadge";
 import { Badge, ButtonLink, Card, Input, Select, SubtleLink } from "@/components/ui";
 
 type SearchParams = {
@@ -163,7 +164,10 @@ export default async function ServicesPage({
                     {primaryUrl ? primaryUrl : "（未填写访问地址）"}
                   </div>
                 </div>
-                <Badge tone={svc.status === "active" ? "green" : "zinc"}>{svc.status}</Badge>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <Badge tone={svc.status === "active" ? "green" : "zinc"}>{svc.status}</Badge>
+                  {svc.healthcheckUrl ? <HealthBadge url={svc.healthcheckUrl} /> : null}
+                </div>
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2">

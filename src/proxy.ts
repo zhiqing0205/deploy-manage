@@ -8,8 +8,10 @@ function apiUnauthorized() {
 }
 
 export default function proxy(req: NextRequest) {
-  // Allow health checks without auth.
+  // Allow health checks and cron endpoints without session auth.
+  // Cron routes have their own Bearer token verification.
   if (req.nextUrl.pathname === "/api/health") return NextResponse.next();
+  if (req.nextUrl.pathname.startsWith("/api/cron/")) return NextResponse.next();
 
   const user = process.env.BASIC_AUTH_USER?.trim();
   const pass = process.env.BASIC_AUTH_PASSWORD?.trim();
